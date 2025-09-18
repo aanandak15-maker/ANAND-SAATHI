@@ -1,0 +1,36 @@
+{
+  "fieldId": "test-bihar-rice-field-1758137256121",
+  "boundary": {
+    "coordinates": [
+      [
+        [
+          85.1,
+          25.2041
+        ],
+        [
+          85.101,
+          25.2041
+        ],
+        [
+          85.101,
+          25.2051
+        ],
+        [
+          85.1,
+          25.2051
+        ],
+        [
+          85.1,
+          25.2041
+        ]
+      ]
+    ]
+  },
+  "cropType": "rice",
+  "analysisDate": "2025-09-17",
+  "metadata": {
+    "testField": true,
+    "location": "Nalanda, Bihar",
+    "name": "Bihar Rice Field"
+  }
+}

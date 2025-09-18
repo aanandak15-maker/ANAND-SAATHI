@@ -1,0 +1,36 @@
+{
+  "fieldId": "test-karnataka-sugarcane-field-1758137256122",
+  "boundary": {
+    "coordinates": [
+      [
+        [
+          74.5,
+          15.85
+        ],
+        [
+          74.501,
+          15.85
+        ],
+        [
+          74.501,
+          15.851
+        ],
+        [
+          74.5,
+          15.851
+        ],
+        [
+          74.5,
+          15.85
+        ]
+      ]
+    ]
+  },
+  "cropType": "sugarcane",
+  "analysisDate": "2025-09-17",
+  "metadata": {
+    "testField": true,
+    "location": "Belgaum, Karnataka",
+    "name": "Karnataka Sugarcane Field"
+  }
+}

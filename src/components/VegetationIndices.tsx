@@ -1,15 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Leaf, TrendingUp, TrendingDown, Minus, Info, Copy, CheckCircle2, Target, Lightbulb, Crop, Calendar, BarChart3 } from "lucide-react";
+import { Leaf, TrendingUp, TrendingDown, Minus, Info, Copy, CheckCircle2, Target, Lightbulb, Crop, Calendar, BarChart3, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { getMostRecentField, getStoredFields, type RealFieldData } from "@/lib/realFieldData";
 
 const VegetationIndices = () => {
   const [copiedText, setCopiedText] = useState('');
   const [selectedIndex, setSelectedIndex] = useState<string | null>(null);
+  const [realFieldData, setRealFieldData] = useState<RealFieldData | null>(null);
+  const [hasRealData, setHasRealData] = useState(false);
+
+  // Check for real field data on component mount
+  useEffect(() => {
+    const checkForRealData = () => {
+      const mostRecentField = getMostRecentField();
+      if (mostRecentField) {
+        setRealFieldData(mostRecentField);
+        setHasRealData(true);
+        console.log('🌾 VegetationIndices: Found real field data:', mostRecentField);
+      } else {
+        setHasRealData(false);
+        console.log('📊 VegetationIndices: No real field data found, using demo data');
+      }
+    };
+
+    checkForRealData();
+  }, []);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -28,36 +48,164 @@ const VegetationIndices = () => {
     MSAVI2: { fullName: "Modified Soil Adjusted Vegetation Index", hindiName: "संशोधित मिट्टी समायोजित वनस्पति सूचकांक", howItWorks: "MSAVI2 reduces soil effects", formula: "Complex formula", uses: ["Early detection"], investorInfo: ["Early intervention"] }
   };
 
-  const indices = [
-    { 
-      name: "NDVI", 
-      value: 0.75, 
-      change: "+5%", 
-      trend: "up", 
-      description: "Normalized Difference Vegetation Index",
-      status: "Healthy",
-      optimal: { min: 0.7, max: 0.9 },
-      growthStage: "Flowering",
-      recommendation: "Maintain current irrigation schedule",
-      priority: "high"
-    },
-    { 
-      name: "MSAVI2", 
-      value: 0.68, 
-      change: "+2%", 
-      trend: "up", 
-      description: "Modified Soil Adjusted Vegetation Index",
-      status: "Good",
-      optimal: { min: 0.6, max: 0.8 },
-      growthStage: "Vegetative",
-      recommendation: "Good early growth, continue nutrients",
-      priority: "medium"
-    },
-    { 
-      name: "NDRE", 
-      value: 0.45, 
-      change: "-3%", 
-      trend: "down", 
+  // Generate indices based on real field data or demo data
+  const generateIndices = () => {
+    if (realFieldData && hasRealData) {
+      const analysis = realFieldData.analysis;
+      return [
+        { 
+          name: "NDVI", 
+          value: analysis.ndvi, 
+          change: analysis.ndvi > 0.6 ? "+5%" : "-2%", 
+          trend: analysis.ndvi > 0.6 ? "up" : "down", 
+          description: "Normalized Difference Vegetation Index",
+          status: analysis.ndvi > 0.6 ? "Healthy" : "Needs Attention",
+          optimal: { min: 0.7, max: 0.9 },
+          growthStage: analysis.cropStage,
+          recommendation: analysis.ndvi > 0.6 ? "Maintain current irrigation schedule" : "Increase irrigation frequency",
+          priority: "high"
+        },
+        { 
+          name: "MSAVI2", 
+          value: analysis.msavi2, 
+          change: analysis.msavi2 > 0.6 ? "+2%" : "-1%", 
+          trend: analysis.msavi2 > 0.6 ? "up" : "down", 
+          description: "Modified Soil Adjusted Vegetation Index",
+          status: analysis.msavi2 > 0.6 ? "Good" : "Moderate",
+          optimal: { min: 0.6, max: 0.8 },
+          growthStage: analysis.cropStage,
+          recommendation: analysis.msavi2 > 0.6 ? "Good early growth, continue nutrients" : "Increase soil-adjusted monitoring",
+          priority: "medium"
+        },
+        { 
+          name: "NDRE", 
+          value: analysis.ndre, 
+          change: analysis.ndre > 0.5 ? "+3%" : "-3%", 
+          trend: analysis.ndre > 0.5 ? "up" : "down", 
+          description: "Normalized Difference Red Edge",
+          status: analysis.ndre > 0.5 ? "Good" : "Monitor",
+          optimal: { min: 0.5, max: 0.7 },
+          growthStage: analysis.cropStage,
+          recommendation: analysis.ndre > 0.5 ? "Chlorophyll levels good" : "Apply foliar nitrogen spray",
+          priority: "high"
+        },
+        { 
+          name: "NDMI", 
+          value: analysis.ndmi, 
+          change: analysis.ndmi > 0.4 ? "0%" : "-5%", 
+          trend: analysis.ndmi > 0.4 ? "stable" : "down", 
+          description: "Normalized Difference Moisture Index",
+          status: analysis.ndmi > 0.4 ? "Stable" : "Water Stress",
+          optimal: { min: 0.4, max: 0.8 },
+          growthStage: "All stages",
+          recommendation: analysis.ndmi > 0.4 ? "Water stress moderate, monitor closely" : "Increase irrigation frequency",
+          priority: "medium"
+        },
+        {
+          name: "SOC_VIS",
+          value: analysis.socVis || 0.35,
+          change: (analysis.socVis || 0.35) > 0.3 ? "+8%" : "+2%",
+          trend: (analysis.socVis || 0.35) > 0.3 ? "up" : "stable",
+          description: "Soil Organic Carbon Visible",
+          status: (analysis.socVis || 0.35) > 0.3 ? "Improving" : "Stable",
+          optimal: { min: 0.3, max: 0.6 },
+          growthStage: "Bare soil",
+          recommendation: (analysis.socVis || 0.35) > 0.3 ? "Good soil health improvement" : "Consider organic matter addition",
+          priority: "low"
+        },
+        {
+          name: "RVI",
+          value: analysis.rvi,
+          change: analysis.rvi > 2.0 ? "+1%" : "-2%",
+          trend: analysis.rvi > 2.0 ? "up" : "down",
+          description: "Ratio Vegetation Index",
+          status: analysis.rvi > 2.0 ? "Good" : "Moderate",
+          optimal: { min: 2.0, max: 4.0 },
+          growthStage: analysis.cropStage,
+          recommendation: analysis.rvi > 2.0 ? "Biomass accumulation good" : "Monitor biomass development",
+          priority: "medium"
+        }
+      ];
+    } else {
+      // Demo data fallback
+      return [
+        { 
+          name: "NDVI", 
+          value: 0.75, 
+          change: "+5%", 
+          trend: "up", 
+          description: "Normalized Difference Vegetation Index",
+          status: "Healthy",
+          optimal: { min: 0.7, max: 0.9 },
+          growthStage: "Flowering",
+          recommendation: "Maintain current irrigation schedule",
+          priority: "high"
+        },
+        { 
+          name: "MSAVI2", 
+          value: 0.68, 
+          change: "+2%", 
+          trend: "up", 
+          description: "Modified Soil Adjusted Vegetation Index",
+          status: "Good",
+          optimal: { min: 0.6, max: 0.8 },
+          growthStage: "Vegetative",
+          recommendation: "Good early growth, continue nutrients",
+          priority: "medium"
+        },
+        { 
+          name: "NDRE", 
+          value: 0.45, 
+          change: "-3%", 
+          trend: "down", 
+          description: "Normalized Difference Red Edge",
+          status: "Monitor",
+          optimal: { min: 0.5, max: 0.7 },
+          growthStage: "Pre-harvest",
+          recommendation: "Apply foliar nitrogen spray",
+          priority: "high"
+        },
+        { 
+          name: "NDMI", 
+          value: 0.52, 
+          change: "0%", 
+          trend: "stable", 
+          description: "Normalized Difference Moisture Index",
+          status: "Stable",
+          optimal: { min: 0.4, max: 0.8 },
+          growthStage: "All stages",
+          recommendation: "Water stress moderate, monitor closely",
+          priority: "medium"
+        },
+        {
+          name: "SOC_VIS",
+          value: 0.35,
+          change: "+8%",
+          trend: "up",
+          description: "Soil Organic Carbon Visible",
+          status: "Improving",
+          optimal: { min: 0.3, max: 0.6 },
+          growthStage: "Bare soil",
+          recommendation: "Good soil health improvement",
+          priority: "low"
+        },
+        {
+          name: "RVI",
+          value: 0.62,
+          change: "+1%",
+          trend: "up",
+          description: "Ratio Vegetation Index",
+          status: "Good",
+          optimal: { min: 2.0, max: 4.0 },
+          growthStage: "All stages",
+          recommendation: "Biomass accumulation on track",
+          priority: "medium"
+        }
+      ];
+    }
+  };
+
+  const indices = generateIndices(); 
       description: "Normalized Difference Red Edge",
       status: "Monitor",
       optimal: { min: 0.5, max: 0.7 },

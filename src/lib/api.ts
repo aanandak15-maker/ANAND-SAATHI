@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client'
+import { analyzeFieldVegetation, testGEEConnection, type FieldBoundary, type GEEAnalysisResult } from './geeClient'
 
 export interface FieldData {
   field_id: string
@@ -11,9 +12,25 @@ export interface FieldData {
     problem_areas: string[]
     ndvi_trend: string
   }
+  vegetation_indices?: {
+    ndvi: number
+    msavi2: number
+    ndre: number
+    ndmi: number
+    rvi: number
+    soc_vis: number | null
+  }
+  field_conditions?: {
+    health_status: string
+    water_stress_level: string
+    quality_score: number
+    cloud_cover: number
+    field_area_hectares: number
+  }
   weather: {
     recent_rainfall_mm: number
     temperature_celsius: number
+    humidity_percent?: number
   }
   farmer_actions: {
     last_irrigation: string
@@ -76,6 +93,16 @@ export const getDemoFieldData = (location: string, crop: string): FieldData => {
 };
 
 export const api = {
+  // Test Google Earth Engine API connection
+  async testGEEConnection() {
+    return await testGEEConnection();
+  },
+
+  // Perform real satellite analysis using GEE API
+  async analyzeFieldWithGEE(boundary: FieldBoundary, cropType?: string, analysisDate?: Date): Promise<GEEAnalysisResult> {
+    return await analyzeFieldVegetation(boundary, cropType, analysisDate);
+  },
+
   async summarizeField(fieldData: FieldData, language: string = 'hi'): Promise<FieldInsights> {
     try {
       const { data, error } = await supabase.functions.invoke('summarize-field', {

@@ -1,0 +1,36 @@
+{
+  "fieldId": "test-punjab-wheat-field-1758137256122",
+  "boundary": {
+    "coordinates": [
+      [
+        [
+          75.85,
+          30.9
+        ],
+        [
+          75.851,
+          30.9
+        ],
+        [
+          75.851,
+          30.901
+        ],
+        [
+          75.85,
+          30.901
+        ],
+        [
+          75.85,
+          30.9
+        ]
+      ]
+    ]
+  },
+  "cropType": "wheat",
+  "analysisDate": "2025-09-17",
+  "metadata": {
+    "testField": true,
+    "location": "Ludhiana, Punjab",
+    "name": "Punjab Wheat Field"
+  }
+}

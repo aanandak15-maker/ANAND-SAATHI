@@ -8,9 +8,16 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "setup-real-gee": "node scripts/setup-real-gee.cjs",
+    "deploy-gee-function": "node scripts/deploy-gee-function.cjs",
+    "test-gee-integration": "node scripts/test-gee-integration.cjs",
+    "test-gee-api-key": "node scripts/test-gee-api-key.cjs",
+    "test-hybrid-api": "node scripts/test-hybrid-api.cjs",
+    "demo-field-analysis": "node scripts/demo-field-analysis.cjs"
   },
   "dependencies": {
+    "@elevenlabs/elevenlabs-js": "^2.15.0",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
