@@ -1,0 +1,898 @@
+/**
+ * Anand Saathi Main Dashboard
+ * Unified dashboard integrating all Anand Saathi features
+ */
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { 
+  Home, 
+  MapPin, 
+  Building2, 
+  Brain, 
+  Bell, 
+  Settings, 
+  User,
+  Plus,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Globe,
+  Smartphone,
+  Languages,
+  Zap,
+  Target,
+  BarChart3,
+  Cloud,
+  DollarSign,
+  Database,
+  Mic,
+  ShoppingCart,
+  Calculator,
+  Heart,
+  MessageCircle,
+  TreePine,
+  Shield,
+  Info,
+  Play
+} from 'lucide-react';
+import { useTranslation } from '@/lib/i18n';
+import { anandSaathiBackend, FieldData } from '@/lib/anandSaathiBackend';
+import { toast } from 'sonner';
+import AnandSaathiFieldMapper from './AnandSaathiFieldMapper';
+import AnandSaathiEnhancedFieldMapper from './AnandSaathiEnhancedFieldMapper';
+import AnandSaathiGovernmentIntegration from './AnandSaathiGovernmentIntegration';
+import AnandSaathiAIForecasting from './AnandSaathiAIForecasting';
+import AnandSaathiAlerts from './AnandSaathiAlerts';
+import AnandSaathiUnifiedDataHub from './AnandSaathiUnifiedDataHub';
+import AnandSaathiUnifiedVoiceAssistant from './AnandSaathiUnifiedVoiceAssistant';
+import AnandSaathiUnifiedMarketplace from './AnandSaathiUnifiedMarketplace';
+import FinancialImpactTracker from './FinancialImpactTracker';
+import EnhancedDoseCalculator from './EnhancedDoseCalculator';
+import AnandSaathiHealthAssessment from './AnandSaathiHealthAssessment';
+import AnandSaathiWhatsAppIntegration from './AnandSaathiWhatsAppIntegration';
+import AnandSaathiPunjabPhenology from './AnandSaathiPunjabPhenology';
+import AnandSaathiRealTimeMetrics from './AnandSaathiRealTimeMetrics';
+import AnandSaathiAccessibilityFeatures from './AnandSaathiAccessibilityFeatures';
+// UI/UX Components
+import OnboardingWizard from './OnboardingWizard';
+import SimpleFarmerInterface from './SimpleFarmerInterface';
+import DemoModeToggle from './DemoModeToggle';
+import InvestorDashboard from './InvestorDashboard';
+// AI Agent Component
+import AnandSaathiAIAgent from './AnandSaathiAIAgent';
+
+interface AnandSaathiDashboardProps {
+  farmerId?: string;
+}
+
+interface DashboardStats {
+  totalFields: number;
+  totalArea: number;
+  activeAlerts: number;
+  governmentSchemes: number;
+  aiForecasts: number;
+  recentActivity: any[];
+}
+
+export const AnandSaathiDashboard: React.FC<AnandSaathiDashboardProps> = ({
+  farmerId = 'demo-farmer'
+}) => {
+  const { t, language, changeLanguage, isPunjabi, isHindi } = useTranslation();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
+    totalFields: 0,
+    totalArea: 0,
+    activeAlerts: 0,
+    governmentSchemes: 0,
+    aiForecasts: 0,
+    recentActivity: []
+  });
+  const [fields, setFields] = useState<FieldData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showFieldMapper, setShowFieldMapper] = useState(false);
+  const [selectedField, setSelectedField] = useState<FieldData | null>(null);
+
+  // Load dashboard data
+  useEffect(() => {
+    loadDashboardData();
+  }, [farmerId]);
+
+  const loadDashboardData = async () => {
+    setIsLoading(true);
+    try {
+      // Load fields
+      const fieldsResult = await anandSaathiBackend.getFields();
+
+      if (!fieldsResult.success || !Array.isArray(fieldsResult.data)) {
+        console.error('Failed to load fields:', fieldsResult);
+        setFields([]);
+        setDashboardStats({
+          totalFields: 0,
+          totalArea: 0,
+          activeAlerts: 0,
+          governmentSchemes: 0,
+          aiForecasts: 0,
+          recentActivity: []
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const userFields = fieldsResult.data || [];
+      setFields(userFields);
+
+      // Calculate stats with safe array operations
+      const totalArea = Array.isArray(userFields) ? userFields.reduce((sum, field) => sum + (field.area_acres || 0), 0) : 0;
+      
+      setDashboardStats({
+        totalFields: userFields.length,
+        totalArea,
+        activeAlerts: 3, // Mock data
+        governmentSchemes: 5, // Mock data
+        aiForecasts: userFields.length,
+        recentActivity: [
+          { id: 1, type: 'field_created', message: 'New field "Rice Field 1" added', timestamp: new Date() },
+          { id: 2, type: 'forecast_generated', message: 'AI forecast generated for Field 1', timestamp: new Date() },
+          { id: 3, type: 'government_scheme', message: 'PM Kisan scheme available', timestamp: new Date() }
+        ]
+      });
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      toast.error(t('common.loadingError'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFieldCreated = (newField: FieldData) => {
+    setFields(prev => [...prev, newField]);
+    setShowFieldMapper(false);
+    toast.success(t('fieldMapping.fieldCreatedSuccessfully'));
+    loadDashboardData(); // Refresh stats
+  };
+
+  const handleLanguageChange = (newLanguage: 'punjabi' | 'hindi' | 'english') => {
+    changeLanguage(newLanguage);
+    toast.success(t('common.languageChanged'));
+  };
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'field_created':
+        return <MapPin className="h-4 w-4 text-green-600" />;
+      case 'forecast_generated':
+        return <Brain className="h-4 w-4 text-blue-600" />;
+      case 'government_scheme':
+        return <Building2 className="h-4 w-4 text-purple-600" />;
+      default:
+        return <Activity className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  if (showFieldMapper) {
+    return (
+      <AnandSaathiEnhancedFieldMapper
+        farmId="demo-farm"
+        onFieldCreated={handleFieldCreated}
+        onCancel={() => setShowFieldMapper(false)}
+      />
+    );
+  }
+
+  if (selectedField) {
+    return (
+      <AnandSaathiAIForecasting
+        fieldData={selectedField}
+        onAnalysisComplete={() => setSelectedField(null)}
+      />
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+                <Home className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Anand Saathi</h1>
+                <p className="text-sm text-gray-600">{t('navigation.dashboard')}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              {/* Language Selector */}
+              <div className="flex items-center gap-2">
+                <Languages className="h-4 w-4 text-gray-500" />
+                <select
+                  value={language}
+                  onChange={(e) => handleLanguageChange(e.target.value as any)}
+                  className="text-sm border rounded px-2 py-1"
+                >
+                  <option value="english">English</option>
+                  <option value="punjabi">ਪੰਜਾਬੀ</option>
+                  <option value="hindi">हिन्दी</option>
+                </select>
+              </div>
+              
+              {/* Mobile App Badge */}
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Smartphone className="h-3 w-3" />
+                PWA Ready
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <MapPin className="h-6 w-6 text-green-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">{t('dashboard.totalFields')}</p>
+                  <p className="text-2xl font-bold text-gray-900">{dashboardStats.totalFields}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Target className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">{t('dashboard.totalArea')}</p>
+                  <p className="text-2xl font-bold text-gray-900">{dashboardStats.totalArea.toFixed(1)} {t('units.acres')}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Building2 className="h-6 w-6 text-purple-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">{t('dashboard.governmentSchemes')}</p>
+                  <p className="text-2xl font-bold text-gray-900">{dashboardStats.governmentSchemes}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Brain className="h-6 w-6 text-orange-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">{t('dashboard.aiForecasts')}</p>
+                  <p className="text-2xl font-bold text-gray-900">{dashboardStats.aiForecasts}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Navigation Helper */}
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center gap-2 mb-3">
+            <Info className="h-5 w-5 text-blue-600" />
+            <h3 className="font-semibold text-blue-800">
+              {isPunjabi ? 'ਨੈਵੀਗੇਸ਼ਨ ਗਾਈਡ (20+ ਵਿਸ਼ੇਸ਼ਤਾਵਾਂ)' : isHindi ? 'नेविगेशन गाइड (20+ विशेषताएं)' : 'Navigation Guide (20+ Features)'}
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+            <div>
+              <h4 className="font-medium text-blue-700 mb-2">
+                {isPunjabi ? 'ਖੇਤੀ ਪ੍ਰਬੰਧਨ' : isHindi ? 'कृषि प्रबंधन' : 'Farm Management'}
+              </h4>
+              <ul className="space-y-1 text-blue-600">
+                <li>• <a href="/anand-saathi/dashboard" className="hover:underline">{isPunjabi ? 'ਡੈਸ਼ਬੋਰਡ' : isHindi ? 'डैशबोर्ड' : 'Dashboard'}</a></li>
+                <li>• <a href="/anand-saathi/field-mapping" className="hover:underline">{isPunjabi ? 'ਖੇਤ ਮੈਪਿੰਗ' : isHindi ? 'खेत मैपिंग' : 'Field Mapping'}</a></li>
+                <li>• <a href="/anand-saathi/ai-forecasting" className="hover:underline">{isPunjabi ? 'AI ਪੂਰਵਾਨੁਮਾਨ' : isHindi ? 'AI पूर्वानुमान' : 'AI Forecasting'}</a></li>
+                <li>• <a href="/anand-saathi/marketplace" className="hover:underline">{isPunjabi ? 'ਮਾਰਕੀਟਪਲੇਸ' : isHindi ? 'मार्केटप्लेस' : 'Marketplace'}</a></li>
+                <li>• <a href="/anand-saathi/soil-analysis" className="hover:underline">{isPunjabi ? 'ਮਿੱਟੀ ਵਿਸ਼ਲੇਸ਼ਣ' : isHindi ? 'मिट्टी विश्लेषण' : 'Soil Analysis'}</a></li>
+                <li>• <a href="/anand-saathi/weather-monitoring" className="hover:underline">{isPunjabi ? 'ਮੌਸਮ ਨਿਗਰਾਨੀ' : isHindi ? 'मौसम निगरानी' : 'Weather Monitoring'}</a></li>
+                <li>• <a href="/anand-saathi/fertilizer-calculator" className="hover:underline">{isPunjabi ? 'ਫਰਟੀਲਾਈਜ਼ਰ ਕੈਲਕੁਲੇਟਰ' : isHindi ? 'उर्वरक कैलकुलेटर' : 'Fertilizer Calculator'}</a></li>
+                <li>• <a href="/anand-saathi/crop-rotation" className="hover:underline">{isPunjabi ? 'ਕ੍ਰੌਪ ਰੋਟੇਸ਼ਨ' : isHindi ? 'क्रॉप रोटेशन' : 'Crop Rotation'}</a></li>
+                <li>• <a href="/anand-saathi/pest-control" className="hover:underline">{isPunjabi ? 'ਕੀੜੇ-ਮਕੌੜੇ ਪ੍ਰਬੰਧਨ' : isHindi ? 'कीट-रोग प्रबंधन' : 'Pest Control'}</a></li>
+                <li>• <a href="/anand-saathi/harvest-planning" className="hover:underline">{isPunjabi ? 'ਕਟਾਈ ਯੋਜਨਾਬੰਦੀ' : isHindi ? 'कटाई योजनाबंदी' : 'Harvest Planning'}</a></li>
+                <li>• <a href="/anand-saathi/market-analysis" className="hover:underline">{isPunjabi ? 'ਮਾਰਕੀਟ ਵਿਸ਼ਲੇਸ਼ਣ' : isHindi ? 'मार्केट विश्लेषण' : 'Market Analysis'}</a></li>
+                <li>• <a href="/anand-saathi/sustainability" className="hover:underline">{isPunjabi ? 'ਸਸਟੇਨੇਬਿਲਿਟੀ' : isHindi ? 'सस्टेनेबिलिटी' : 'Sustainability'}</a></li>
+                <li>• <a href="/anand-saathi/reports" className="hover:underline">{isPunjabi ? 'ਰਿਪੋਰਟਸ' : isHindi ? 'रिपोर्ट्स' : 'Reports'}</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-medium text-blue-700 mb-2">
+                {isPunjabi ? 'ਸੰਚਾਰ ਅਤੇ ਸਹਾਇਤਾ' : isHindi ? 'संचार और सहायता' : 'Communication & Accessibility'}
+              </h4>
+              <ul className="space-y-1 text-blue-600">
+                <li>• <a href="/anand-saathi/voice-assistant" className="hover:underline">{isPunjabi ? 'ਵੌਇਸ ਅਸਿਸਟੈਂਟ' : isHindi ? 'वॉयस असिस्टेंट' : 'Voice Assistant'}</a></li>
+                <li>• <a href="/anand-saathi/whatsapp" className="hover:underline">{isPunjabi ? 'WhatsApp' : isHindi ? 'WhatsApp' : 'WhatsApp'}</a></li>
+                <li>• <a href="/anand-saathi/alerts" className="hover:underline">{isPunjabi ? 'ਅਲਰਟਸ' : isHindi ? 'अलर्ट्स' : 'Alerts'}</a></li>
+                <li>• <a href="/anand-saathi/accessibility" className="hover:underline">{isPunjabi ? 'ਸਹਾਇਤਾ' : isHindi ? 'सहायता' : 'Accessibility'}</a></li>
+                <li>• <a href="/anand-saathi/settings" className="hover:underline">{isPunjabi ? 'ਸੈਟਿੰਗਸ' : isHindi ? 'सेटिंग्स' : 'Settings'}</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-medium text-blue-700 mb-2">
+                {isPunjabi ? 'ਸਰਕਾਰੀ ਸੇਵਾਵਾਂ' : isHindi ? 'सरकारी सेवाएं' : 'Government Services'}
+              </h4>
+              <ul className="space-y-1 text-blue-600">
+                <li>• <a href="/anand-saathi/government" className="hover:underline">{isPunjabi ? 'PM ਕਿਸਾਨ' : isHindi ? 'PM किसान' : 'PM Kisan'}</a></li>
+                <li>• <a href="/anand-saathi/government" className="hover:underline">{isPunjabi ? 'ਪੰਜਾਬ ਸਕੀਮਾਂ' : isHindi ? 'पंजाब स्कीमें' : 'Punjab Schemes'}</a></li>
+                <li>• <a href="/anand-saathi/alerts" className="hover:underline">{isPunjabi ? 'ਅਲਰਟਸ' : isHindi ? 'अलर्ट्स' : 'Alerts'}</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-medium text-blue-700 mb-2">
+                {isPunjabi ? 'ਯੂਜ਼ਰ ਇੰਟਰਫੇਸ ਅਤੇ ਅਨੁਭਵ' : isHindi ? 'यूजर इंटरफेस और अनुभव' : 'User Interface & Experience'}
+              </h4>
+              <ul className="space-y-1 text-blue-600">
+                <li>• <a href="/anand-saathi/onboarding" className="hover:underline">{isPunjabi ? 'ਆਨਬੋਰਡਿੰਗ' : isHindi ? 'ऑनबोर्डिंग' : 'Onboarding'}</a></li>
+                <li>• <a href="/anand-saathi/simple-interface" className="hover:underline">{isPunjabi ? 'ਸਰਲ ਇੰਟਰਫੇਸ' : isHindi ? 'सरल इंटरफेस' : 'Simple Interface'}</a></li>
+                <li>• <a href="/anand-saathi/demo-mode" className="hover:underline">{isPunjabi ? 'ਡੈਮੋ ਮੋਡ' : isHindi ? 'डेमो मोड' : 'Demo Mode'}</a></li>
+                <li>• <a href="/anand-saathi/investor-dashboard" className="hover:underline">{isPunjabi ? 'ਨਿਵੇਸ਼ਕ ਡੈਸ਼ਬੋਰਡ' : isHindi ? 'निवेशक डैशबोर्ड' : 'Investor Dashboard'}</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-14 mb-6">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <Home className="h-4 w-4" />
+              {t('navigation.dashboard')}
+            </TabsTrigger>
+            <TabsTrigger value="data-hub" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              {isPunjabi ? 'ਡੇਟਾ ਹੱਬ' : isHindi ? 'डेटा हब' : 'Data Hub'}
+            </TabsTrigger>
+            <TabsTrigger value="voice-assistant" className="flex items-center gap-2">
+              <Mic className="h-4 w-4" />
+              {isPunjabi ? 'ਵੌਇਸ ਸਹਾਇਕ' : isHindi ? 'वॉयस सहायक' : 'Voice Assistant'}
+            </TabsTrigger>
+            <TabsTrigger value="fields" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              {t('navigation.fieldMapping')}
+            </TabsTrigger>
+            <TabsTrigger value="government" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              {t('navigation.governmentServices')}
+            </TabsTrigger>
+            <TabsTrigger value="ai" className="flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              {isPunjabi ? '🤖 AI ਏਜੰਟ' : isHindi ? '🤖 AI एजेंट' : '🤖 AI Agent'}
+            </TabsTrigger>
+            <TabsTrigger value="financial" className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              {isPunjabi ? 'ਵਿੱਤੀ ਪ੍ਰਭਾਵ' : isHindi ? 'वित्तीय प्रभाव' : 'Financial Impact'}
+            </TabsTrigger>
+            <TabsTrigger value="alerts" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              {t('navigation.alerts')}
+            </TabsTrigger>
+            <TabsTrigger value="marketplace" className="flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              {isPunjabi ? 'ਮਾਰਕੀਟਪਲੇਸ' : isHindi ? 'मार्केटप्लेस' : 'Marketplace'}
+            </TabsTrigger>
+            <TabsTrigger value="health" className="flex items-center gap-2">
+              <Heart className="h-4 w-4" />
+              {isPunjabi ? 'ਸਿਹਤ' : isHindi ? 'स्वास्थ्य' : 'Health'}
+            </TabsTrigger>
+            <TabsTrigger value="whatsapp" className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              {isPunjabi ? 'WhatsApp' : isHindi ? 'WhatsApp' : 'WhatsApp'}
+            </TabsTrigger>
+            <TabsTrigger value="punjab" className="flex items-center gap-2">
+              <TreePine className="h-4 w-4" />
+              {isPunjabi ? 'ਪੰਜਾਬ' : isHindi ? 'पंजाब' : 'Punjab'}
+            </TabsTrigger>
+            <TabsTrigger value="realtime" className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              {isPunjabi ? 'ਲਾਈਵ' : isHindi ? 'लाइव' : 'Live'}
+            </TabsTrigger>
+            <TabsTrigger value="accessibility" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              {isPunjabi ? 'ਸਹਾਇਤਾ' : isHindi ? 'सहायता' : 'Accessibility'}
+            </TabsTrigger>
+            <TabsTrigger value="onboarding" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              {isPunjabi ? 'ਆਨਬੋਰਡਿੰਗ' : isHindi ? 'ऑनबोर्डिंग' : 'Onboarding'}
+            </TabsTrigger>
+            <TabsTrigger value="simple-interface" className="flex items-center gap-2">
+              <Smartphone className="h-4 w-4" />
+              {isPunjabi ? 'ਸਰਲ' : isHindi ? 'सरल' : 'Simple'}
+            </TabsTrigger>
+            <TabsTrigger value="demo-mode" className="flex items-center gap-2">
+              <Play className="h-4 w-4" />
+              {isPunjabi ? 'ਡੈਮੋ' : isHindi ? 'डेमो' : 'Demo'}
+            </TabsTrigger>
+            <TabsTrigger value="investor" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              {isPunjabi ? 'ਨਿਵੇਸ਼ਕ' : isHindi ? 'निवेशक' : 'Investor'}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Fields Overview */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    {t('dashboard.yourFields')}
+                  </CardTitle>
+                  <CardDescription>
+                    {t('dashboard.fieldsDescription')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {(Array.isArray(fields) ? fields.length : 0) === 0 ? (
+                    <div className="text-center py-8">
+                      <MapPin className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                      <p className="text-gray-600 mb-4">{t('dashboard.noFields')}</p>
+                      <Button onClick={() => setShowFieldMapper(true)} className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        {t('dashboard.addFirstField')}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {(Array.isArray(fields) ? fields.slice(0, 3) : []).map((field) => (
+                        <div key={field.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div>
+                            <p className="font-medium">{field.name}</p>
+                            <p className="text-sm text-gray-600">{field.crop_type} • {field.area_acres} {t('units.acres')}</p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedField({
+                              ...field,
+                              id: field.id?.toString() || field.id
+                            })}
+                          >
+                            {t('dashboard.viewForecast')}
+                          </Button>
+                        </div>
+                      ))}
+                      {(Array.isArray(fields) ? fields.length : 0) > 3 && (
+                        <Button variant="outline" className="w-full">
+                          {t('dashboard.viewAllFields')} ({(Array.isArray(fields) ? fields.length : 0)})
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Recent Activity */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5" />
+                    {t('dashboard.recentActivity')}
+                  </CardTitle>
+                  <CardDescription>
+                    {t('dashboard.activityDescription')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {dashboardStats.recentActivity.map((activity) => (
+                      <div key={activity.id} className="flex items-start gap-3 p-3 border rounded-lg">
+                        {getActivityIcon(activity.type)}
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{activity.message}</p>
+                          <p className="text-xs text-gray-500">
+                            {activity.timestamp.toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('dashboard.quickActions')}</CardTitle>
+                <CardDescription>
+                  {t('dashboard.quickActionsDescription')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button
+                    variant="outline"
+                    className="h-20 flex flex-col items-center gap-2"
+                    onClick={() => setShowFieldMapper(true)}
+                  >
+                    <MapPin className="h-6 w-6" />
+                    <span>{t('dashboard.addField')}</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-20 flex flex-col items-center gap-2"
+                    onClick={() => setActiveTab('government')}
+                  >
+                    <Building2 className="h-6 w-6" />
+                    <span>{t('dashboard.viewSchemes')}</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-20 flex flex-col items-center gap-2"
+                    onClick={() => setActiveTab('ai')}
+                  >
+                    <Brain className="h-6 w-6" />
+                    <span>{t('dashboard.generateForecast')}</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Fields Tab */}
+          <TabsContent value="fields" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5" />
+                      {t('navigation.fieldMapping')}
+                    </CardTitle>
+                    <CardDescription>
+                      {t('dashboard.fieldsDescription')}
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => setShowFieldMapper(true)} className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    {t('dashboard.addField')}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {(Array.isArray(fields) ? fields.length : 0) === 0 ? (
+                  <div className="text-center py-12">
+                    <MapPin className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">{t('dashboard.noFields')}</h3>
+                    <p className="text-gray-600 mb-6">{t('dashboard.noFieldsDescription')}</p>
+                    <Button onClick={() => setShowFieldMapper(true)} className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      {t('dashboard.addFirstField')}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {(Array.isArray(fields) ? fields : []).map((field) => (
+                      <Card key={field.id} className="hover:shadow-md transition-shadow cursor-pointer">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h3 className="font-medium">{field.name}</h3>
+                              <p className="text-sm text-gray-600">{field.crop_type}</p>
+                            </div>
+                            <Badge variant="outline">{field.area_acres} {t('units.acres')}</Badge>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <Globe className="h-3 w-3" />
+                              {field.latitude?.toFixed(4)}, {field.longitude?.toFixed(4)}
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={() => setSelectedField({
+                              ...field,
+                              id: field.id?.toString() || field.id
+                            })}
+                              >
+                                <Brain className="h-3 w-3 mr-1" />
+                                {t('dashboard.forecast')}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                              >
+                                <BarChart3 className="h-3 w-3 mr-1" />
+                                {t('dashboard.analytics')}
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Government Tab */}
+          <TabsContent value="government">
+            <AnandSaathiGovernmentIntegration />
+          </TabsContent>
+
+          {/* AI Tab */}
+          <TabsContent value="ai" className="space-y-6">
+            {(Array.isArray(fields) ? fields.length : 0) === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <Brain className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">{t('dashboard.noFieldsForAI')}</h3>
+                  <p className="text-gray-600 mb-6">{t('dashboard.noFieldsForAIDescription')}</p>
+                  <Button onClick={() => setShowFieldMapper(true)} className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    {t('dashboard.addFirstField')}
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain className="h-5 w-5" />
+                      {t('navigation.aiForecasting')}
+                    </CardTitle>
+                    <CardDescription>
+                      {t('dashboard.aiForecastingDescription')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {(Array.isArray(fields) ? fields : []).map((field) => (
+                        <Card key={field.id} className="hover:shadow-md transition-shadow cursor-pointer">
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <Brain className="h-5 w-5 text-blue-600" />
+                              </div>
+                              <div>
+                                <h3 className="font-medium">{field.name}</h3>
+                                <p className="text-sm text-gray-600">{field.crop_type}</p>
+                              </div>
+                            </div>
+                            <Button
+                              className="w-full"
+                              onClick={() => setSelectedField({
+                                ...field,
+                                id: field.id?.toString() || field.id
+                              })}
+                            >
+                              {t('dashboard.generateForecast')}
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Financial Impact Tab */}
+          <TabsContent value="financial" className="space-y-6">
+            <Tabs defaultValue="tracker" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="tracker">
+                  {isPunjabi ? 'ਵਿੱਤੀ ਟ੍ਰੈਕਰ' : isHindi ? 'वित्तीय ट्रैकर' : 'Financial Tracker'}
+                </TabsTrigger>
+                <TabsTrigger value="calculator">
+                  {isPunjabi ? 'ਖਰਚਾ ਕੈਲਕੁਲੇਟਰ' : isHindi ? 'खर्च कैलकुलेटर' : 'Cost Calculator'}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="tracker" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      {isPunjabi ? 'ਵਿੱਤੀ ਪ੍ਰਭਾਵ ਟ੍ਰੈਕਰ' : isHindi ? 'वित्तीय प्रभाव ट्रैकर' : 'Financial Impact Tracker'}
+                    </CardTitle>
+                    <CardDescription>
+                      {isPunjabi 
+                        ? 'ਆਪਣੇ ਖੇਤੀ ਨਿਵੇਸ਼ਾਂ ਦਾ ਲਾਭ ਅਤੇ ਖਰਚਾ ਵਿਸ਼ਲੇਸ਼ਣ'
+                        : isHindi 
+                        ? 'अपने कृषि निवेशों का लाभ और खर्च विश्लेषण'
+                        : 'Analyze the profit and cost of your agricultural investments'
+                      }
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <FinancialImpactTracker 
+                      financialData={{
+                        currentRevenue: 125000,
+                        projectedRevenue: 150000,
+                        inputCosts: 45000,
+                        savedCosts: 12000,
+                        profitMargin: 35,
+                        roi: 0.28,
+                        roiPercentage: 28,
+                        carbonCredits: 10000,
+                        governmentSubsidy: 15000,
+                        costSavings: [
+                          { category: "Fertilizer", amount: 5000, description: "Optimized NPK application" },
+                          { category: "Pesticide", amount: 3000, description: "Precision spraying" },
+                          { category: "Water", amount: 2000, description: "Smart irrigation" },
+                          { category: "Labor", amount: 2000, description: "Automated monitoring" }
+                        ],
+                        revenueSources: [
+                          { source: "Crop Yield", amount: 100000, percentage: 80 },
+                          { source: "Government Subsidies", amount: 15000, percentage: 12 },
+                          { source: "Carbon Credits", amount: 10000, percentage: 8 }
+                        ]
+                      }}
+                      timeframe="Current Season"
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="calculator" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calculator className="h-5 w-5" />
+                      {isPunjabi ? 'ਉੱਨਤ ਖਰਚਾ ਕੈਲਕੁਲੇਟਰ' : isHindi ? 'उन्नत खर्च कैलकुलेटर' : 'Enhanced Cost Calculator'}
+                    </CardTitle>
+                    <CardDescription>
+                      {isPunjabi 
+                        ? 'ਖਾਦ, ਕੀਟਨਾਸ਼ਕ, ਅਤੇ ਸਿੰਚਾਈ ਲਈ ਸਹੀ ਖਰਚਾ ਗਣਨਾ'
+                        : isHindi 
+                        ? 'खाद, कीटनाशक, और सिंचाई के लिए सही खर्च गणना'
+                        : 'Accurate cost calculation for fertilizers, pesticides, and irrigation'
+                      }
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <EnhancedDoseCalculator />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+
+          {/* Data Hub Tab */}
+          <TabsContent value="data-hub">
+            <AnandSaathiUnifiedDataHub />
+          </TabsContent>
+
+          {/* Voice Assistant Tab */}
+          <TabsContent value="voice-assistant">
+            <AnandSaathiUnifiedVoiceAssistant />
+          </TabsContent>
+
+          {/* Alerts Tab */}
+          <TabsContent value="alerts">
+            <AnandSaathiAlerts />
+          </TabsContent>
+
+          {/* Marketplace Tab */}
+          <TabsContent value="marketplace">
+            <AnandSaathiUnifiedMarketplace />
+          </TabsContent>
+
+          {/* Health Assessment Tab */}
+          <TabsContent value="health">
+            <AnandSaathiHealthAssessment />
+          </TabsContent>
+
+          {/* WhatsApp Integration Tab */}
+          <TabsContent value="whatsapp">
+            <AnandSaathiWhatsAppIntegration />
+          </TabsContent>
+
+          {/* Punjab Phenology Tab */}
+          <TabsContent value="punjab">
+            <AnandSaathiPunjabPhenology />
+          </TabsContent>
+
+          {/* Real-time Metrics Tab */}
+          <TabsContent value="realtime">
+            <AnandSaathiRealTimeMetrics />
+          </TabsContent>
+
+          {/* Accessibility Features Tab */}
+          <TabsContent value="accessibility">
+            <AnandSaathiAccessibilityFeatures />
+          </TabsContent>
+
+          {/* Onboarding Tab */}
+          <TabsContent value="onboarding">
+            <OnboardingWizard onComplete={() => {
+              toast.success(isPunjabi ? 'ਆਨਬੋਰਡਿੰਗ ਪੂਰੀ ਹੋ ਗਈ!' : isHindi ? 'ऑनबोर्डिंग पूरी हो गई!' : 'Onboarding completed!');
+              setActiveTab('overview');
+            }} />
+          </TabsContent>
+
+          {/* Simple Interface Tab */}
+          <TabsContent value="simple-interface">
+            <SimpleFarmerInterface farmerData={{
+              name: 'Ram Singh',
+              location: 'Punjab, India',
+              cropHealth: 'good',
+              alerts: [
+                { type: 'weather', message: 'Rain expected in 2 days', urgency: 'medium' },
+                { type: 'nutrition', message: 'Nitrogen levels optimal', urgency: 'low' }
+              ],
+              todayActions: [
+                { action: 'Apply fertilizer', cost: 500, expectedROI: '+15% yield' },
+                { action: 'Check irrigation', cost: 200, expectedROI: '+8% efficiency' }
+              ],
+              monthlyROI: '+12%'
+            }} />
+          </TabsContent>
+
+          {/* Demo Mode Tab */}
+          <TabsContent value="demo-mode">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Play className="h-5 w-5" />
+                    {isPunjabi ? 'ਡੈਮੋ ਮੋਡ' : isHindi ? 'डेमो मोड' : 'Demo Mode'}
+                  </CardTitle>
+                  <CardDescription>
+                    {isPunjabi ? 'ਵੱਖ-ਵੱਖ ਫਾਰਮਰ ਸੀਨਾਰੀਓ ਦੇ ਨਾਲ ਐਪਲੀਕੇਸ਼ਨ ਦਾ ਟੈਸਟ ਕਰੋ' : isHindi ? 'विभिन्न किसान परिदृश्यों के साथ एप्लिकेशन का परीक्षण करें' : 'Test the application with different farmer scenarios'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <DemoModeToggle onScenarioChange={(scenario) => {
+                    if (scenario) {
+                      toast.success(isPunjabi ? `ਡੈਮੋ ਸੀਨਾਰੀਓ ਸ਼ੁਰੂ ਕੀਤਾ: ${scenario.farmer.name}` : isHindi ? `डेमो परिदृश्य शुरू किया: ${scenario.farmer.name}` : `Demo scenario started: ${scenario.farmer.name}`);
+                    } else {
+                      toast.info(isPunjabi ? 'ਡੈਮੋ ਮੋਡ ਬੰਦ ਕੀਤਾ ਗਿਆ' : isHindi ? 'डेमो मोड बंद किया गया' : 'Demo mode turned off');
+                    }
+                  }} currentScenario={null} />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Investor Dashboard Tab */}
+          <TabsContent value="investor">
+            <InvestorDashboard />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+};
+
+export default AnandSaathiDashboard;
+
+
+
+

@@ -23,7 +23,10 @@ import {
   Target,
   Play,
   MessageCircle,
-  Volume2
+  Volume2,
+  Wheat,
+  Award,
+  Shield
 } from "lucide-react";
 import FarmMap from "@/components/FarmMap";
 import SimplifiedHealthAssessment from "@/components/SimplifiedHealthAssessment";
@@ -31,24 +34,26 @@ import UpdatedVegetationIndices from "@/components/UpdatedVegetationIndices";
 import Marketplace from "@/components/Marketplace";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import SimpleFieldMapper from "@/components/SimpleFieldMapper";
-import AudioTest from "@/components/AudioTest";
-import VoiceAssistant from "@/components/VoiceAssistant";
-import AccessibilityFeatures from "@/components/AccessibilityFeatures";
+import EnhancedVoiceAssistant from "@/components/EnhancedVoiceAssistant";
+import SimplifiedAccessibility from "@/components/SimplifiedAccessibility";
 import SimpleFarmerInterface from "@/components/SimpleFarmerInterface";
-import WhatsAppIntegration from "@/components/WhatsAppIntegration";
+import EnhancedWhatsApp from "@/components/EnhancedWhatsApp";
 import DemoModeToggle from "@/components/DemoModeToggle";
 import RealTimeMetrics from '@/components/RealTimeMetrics';
 import FinancialImpactTracker from '@/components/FinancialImpactTracker';
 import EnhancedMarketplace from '@/components/EnhancedMarketplace';
 import EnhancedDoseCalculator from '@/components/EnhancedDoseCalculator';
+import AnandSaathiDashboard from '@/components/AnandSaathiDashboard';
 import { type DemoScenario } from "@/data/demoData";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getDemoFieldData, api } from "@/lib/api";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const navigate = useNavigate();
 
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showFieldMapper, setShowFieldMapper] = useState(false);
@@ -255,9 +260,9 @@ const Index = () => {
                       <Eye className="h-4 w-4" />
                       <span className="text-xs">Access</span>
                     </TabsTrigger>
-                    <TabsTrigger value="audio-test" className="flex flex-col gap-1 h-16">
-                      <Volume2 className="h-4 w-4" />
-                      <span className="text-xs">Audio Test</span>
+                    <TabsTrigger value="anand-saathi" className="flex flex-col gap-1 h-16">
+                      <Award className="h-4 w-4" />
+                      <span className="text-xs">Anand Saathi</span>
                     </TabsTrigger>
                   </TabsList>
 
@@ -338,6 +343,65 @@ const Index = () => {
                       </Card>
                     </div>
 
+                    {/* Punjab Rice Phenology System */}
+                    <Card className="border-l-4 border-l-green-500">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-green-800">
+                          <Wheat className="h-6 w-6" />
+                          ਪੰਜਾਬ ਰਾਈਸ ਸਿਸਟਮ (Punjab Rice System)
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          Advanced rice phenology monitoring and government integration for Punjab farmers
+                        </p>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <Button 
+                            onClick={() => navigate('/punjab')} 
+                            className="h-auto p-4 flex flex-col items-center gap-2 bg-green-600 hover:bg-green-700"
+                          >
+                            <Wheat className="h-6 w-6" />
+                            <div className="text-center">
+                              <div className="font-semibold">Punjab Dashboard</div>
+                              <div className="text-xs opacity-90">Field monitoring & analysis</div>
+                            </div>
+                          </Button>
+                          
+                          <Button 
+                            onClick={() => navigate('/punjab/alerts')} 
+                            variant="outline" 
+                            className="h-auto p-4 flex flex-col items-center gap-2 border-green-200 hover:bg-green-50"
+                          >
+                            <Bell className="h-6 w-6 text-green-600" />
+                            <div className="text-center">
+                              <div className="font-semibold text-green-800">Alert Management</div>
+                              <div className="text-xs text-green-600">SMS, WhatsApp, Push notifications</div>
+                            </div>
+                          </Button>
+                          
+                          <Button 
+                            onClick={() => navigate('/punjab/government')} 
+                            variant="outline" 
+                            className="h-auto p-4 flex flex-col items-center gap-2 border-green-200 hover:bg-green-50"
+                          >
+                            <Award className="h-6 w-6 text-green-600" />
+                            <div className="text-center">
+                              <div className="font-semibold text-green-800">Government Services</div>
+                              <div className="text-xs text-green-600">PM Kisan, schemes, advisories</div>
+                            </div>
+                          </Button>
+                        </div>
+                        
+                        <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                          <div className="flex items-center gap-2 text-sm text-green-800">
+                            <Shield className="h-4 w-4" />
+                            <span className="font-medium">Features:</span>
+                            <span>PR-126 & HKR-47 varieties • Boundary analysis • TimesFM AI • Multi-language support</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
                     {/* Field Status */}
                     {userSetup && (
                       <Card>
@@ -394,19 +458,19 @@ const Index = () => {
                   </TabsContent>
 
                   <TabsContent value="voice">
-                    <VoiceAssistant context={activeTab as any} />
+                    <EnhancedVoiceAssistant context={activeTab as any} />
                   </TabsContent>
 
                   <TabsContent value="whatsapp">
-                    <WhatsAppIntegration />
+                    <EnhancedWhatsApp />
                   </TabsContent>
 
                   <TabsContent value="accessibility">
-                    <AccessibilityFeatures />
+                    <SimplifiedAccessibility />
                   </TabsContent>
 
-                  <TabsContent value="audio-test">
-                    <AudioTest />
+                  <TabsContent value="anand-saathi">
+                    <AnandSaathiDashboard />
                   </TabsContent>
                 </Tabs>
               </div>

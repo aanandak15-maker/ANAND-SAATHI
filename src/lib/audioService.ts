@@ -10,7 +10,11 @@ const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY || '9a83e9046
 const VOICE_IDS = {
   english: 'JBFqnCBsd6RMkjVDRZzb', // Default English voice
   hindi: 'JBFqnCBsd6RMkjVDRZzb',   // Can be changed to Hindi-specific voice
-  punjabi: 'JBFqnCBsd6RMkjVDRZzb'  // Can be changed to Punjabi-specific voice
+  punjabi: 'JBFqnCBsd6RMkjVDRZzb', // Can be changed to Punjabi-specific voice
+  // Add short language codes
+  en: 'JBFqnCBsd6RMkjVDRZzb',
+  hi: 'JBFqnCBsd6RMkjVDRZzb',
+  pa: 'JBFqnCBsd6RMkjVDRZzb'
 };
 
 // Model configurations for different languages
@@ -26,11 +30,24 @@ const MODEL_CONFIGS = {
   punjabi: {
     modelId: 'eleven_multilingual_v2',
     outputFormat: 'mp3_44100_128'
+  },
+  // Add short language codes
+  en: {
+    modelId: 'eleven_multilingual_v2',
+    outputFormat: 'mp3_44100_128'
+  },
+  hi: {
+    modelId: 'eleven_multilingual_v2',
+    outputFormat: 'mp3_44100_128'
+  },
+  pa: {
+    modelId: 'eleven_multilingual_v2',
+    outputFormat: 'mp3_44100_128'
   }
 };
 
 export interface AudioConfig {
-  language: 'english' | 'hindi' | 'punjabi';
+  language: 'english' | 'hindi' | 'punjabi' | 'en' | 'hi' | 'pa';
   voiceId?: string;
   modelId?: string;
   outputFormat?: string;
@@ -70,25 +87,35 @@ class AudioService {
 
     try {
       // Handle both AudioConfig object and string (language) parameter
-      let language: 'english' | 'hindi' | 'punjabi';
+      let language: 'english' | 'hindi' | 'punjabi' | 'en' | 'hi' | 'pa';
       let voiceId: string;
       let modelConfig: any;
 
       if (typeof config === 'string') {
-        language = config as 'english' | 'hindi' | 'punjabi';
+        language = config as 'english' | 'hindi' | 'punjabi' | 'en' | 'hi' | 'pa';
         voiceId = VOICE_IDS[language];
         modelConfig = MODEL_CONFIGS[language];
       } else {
         language = config.language;
         voiceId = config.voiceId || VOICE_IDS[language];
         modelConfig = {
-          modelId: config.modelId || MODEL_CONFIGS[language].modelId,
-          outputFormat: config.outputFormat || MODEL_CONFIGS[language].outputFormat
+          modelId: config.modelId || MODEL_CONFIGS[language]?.modelId || 'eleven_multilingual_v2',
+          outputFormat: config.outputFormat || MODEL_CONFIGS[language]?.outputFormat || 'mp3_44100_128'
+        };
+      }
+
+      // Ensure modelConfig is properly set
+      if (!modelConfig || !modelConfig.modelId) {
+        console.error('Model configuration is missing:', modelConfig);
+        return {
+          success: false,
+          error: 'Model configuration is missing'
         };
       }
 
       console.log(`🎵 Converting text to speech in ${language}...`);
       console.log(`📝 Text length: ${text.length} characters`);
+      console.log(`🔧 Model config:`, modelConfig);
 
       const audio = await this.client.textToSpeech.convert(voiceId, {
         text: text,
@@ -253,7 +280,7 @@ class AudioService {
 
     try {
       // Handle both AudioConfig object and string (language) parameter
-      let language: 'english' | 'hindi' | 'punjabi';
+      let language: 'english' | 'hindi' | 'punjabi' | 'en' | 'hi' | 'pa';
       let voiceId: string;
       let modelConfig: any;
 

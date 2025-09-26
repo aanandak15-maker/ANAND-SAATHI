@@ -14,15 +14,20 @@ const FinancialImpactTracker: React.FC<FinancialImpactTrackerProps> = ({
   financialData, 
   timeframe 
 }) => {
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | undefined) => {
+    if (!amount || isNaN(amount)) {
+      return '₹0';
+    }
     if (amount >= 100000) {
       return `₹${(amount / 100000).toFixed(1)}L`;
     }
     return `₹${amount.toLocaleString()}`;
   };
 
-  const netProfit = financialData.currentRevenue - financialData.inputCosts + financialData.savedCosts;
-  const profitGrowth = ((financialData.projectedRevenue - financialData.currentRevenue) / financialData.currentRevenue) * 100;
+  const netProfit = (financialData.currentRevenue || 0) - (financialData.inputCosts || 0) + (financialData.savedCosts || 0);
+  const profitGrowth = financialData.currentRevenue && financialData.projectedRevenue 
+    ? ((financialData.projectedRevenue - financialData.currentRevenue) / financialData.currentRevenue) * 100 
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -58,10 +63,10 @@ const FinancialImpactTracker: React.FC<FinancialImpactTrackerProps> = ({
           <div className="mt-4">
             <div className="flex justify-between text-sm mb-2">
               <span>Revenue Progress</span>
-              <span>{((financialData.currentRevenue / financialData.projectedRevenue) * 100).toFixed(0)}%</span>
+              <span>{financialData.currentRevenue && financialData.projectedRevenue ? ((financialData.currentRevenue / financialData.projectedRevenue) * 100).toFixed(0) : 0}%</span>
             </div>
             <Progress 
-              value={(financialData.currentRevenue / financialData.projectedRevenue) * 100} 
+              value={financialData.currentRevenue && financialData.projectedRevenue ? (financialData.currentRevenue / financialData.projectedRevenue) * 100 : 0} 
               className="h-3"
             />
           </div>
@@ -106,7 +111,7 @@ const FinancialImpactTracker: React.FC<FinancialImpactTrackerProps> = ({
               <div className="text-right">
                 <div className="text-sm text-muted-foreground">Profit Margin</div>
                 <div className="text-lg font-semibold">
-                  {financialData.profitMargin}%
+                  {financialData.profitMargin || 0}%
                 </div>
               </div>
             </div>
@@ -135,7 +140,7 @@ const FinancialImpactTracker: React.FC<FinancialImpactTrackerProps> = ({
                 </div>
               </div>
               <div className="text-2xl font-bold text-purple-600">
-                {financialData.roiPercentage}%
+                {financialData.roiPercentage || 0}%
               </div>
             </div>
 
@@ -145,7 +150,7 @@ const FinancialImpactTracker: React.FC<FinancialImpactTrackerProps> = ({
                   <Leaf className="h-4 w-4 text-green-500" />
                   <span className="text-sm font-medium">Carbon Credits</span>
                 </div>
-                <div className="text-lg font-bold">{formatCurrency(financialData.carbonCredits)}</div>
+                <div className="text-lg font-bold">{formatCurrency(financialData.carbonCredits || 0)}</div>
                 <div className="text-xs text-muted-foreground">Sustainable farming bonus</div>
               </div>
 
@@ -154,7 +159,7 @@ const FinancialImpactTracker: React.FC<FinancialImpactTrackerProps> = ({
                   <Shield className="h-4 w-4 text-blue-500" />
                   <span className="text-sm font-medium">Gov. Subsidy</span>
                 </div>
-                <div className="text-lg font-bold">{formatCurrency(financialData.governmentSubsidy)}</div>
+                <div className="text-lg font-bold">{formatCurrency(financialData.governmentSubsidy || 0)}</div>
                 <div className="text-xs text-muted-foreground">Digital farming incentive</div>
               </div>
             </div>
@@ -177,7 +182,7 @@ const FinancialImpactTracker: React.FC<FinancialImpactTrackerProps> = ({
               <div>
                 <div className="font-medium text-amber-800">Top Performer</div>
                 <div className="text-sm text-amber-700">
-                  Achieved {financialData.roiPercentage}% ROI - Top 5% of farmers in region
+                  Achieved {financialData.roiPercentage || 0}% ROI - Top 5% of farmers in region
                 </div>
               </div>
             </div>
@@ -187,7 +192,7 @@ const FinancialImpactTracker: React.FC<FinancialImpactTrackerProps> = ({
               <div>
                 <div className="font-medium text-green-800">Sustainability Champion</div>
                 <div className="text-sm text-green-700">
-                  Earned ₹{financialData.carbonCredits.toLocaleString()} in carbon credits
+                  Earned {formatCurrency(financialData.carbonCredits || 0)} in carbon credits
                 </div>
               </div>
             </div>

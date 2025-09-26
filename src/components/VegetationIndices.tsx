@@ -205,51 +205,7 @@ const VegetationIndices = () => {
     }
   };
 
-  const indices = generateIndices(); 
-      description: "Normalized Difference Red Edge",
-      status: "Monitor",
-      optimal: { min: 0.5, max: 0.7 },
-      growthStage: "Pre-harvest",
-      recommendation: "Apply foliar nitrogen spray",
-      priority: "high"
-    },
-    { 
-      name: "NDMI", 
-      value: 0.52, 
-      change: "0%", 
-      trend: "stable", 
-      description: "Normalized Difference Moisture Index",
-      status: "Stable",
-      optimal: { min: 0.4, max: 0.8 },
-      growthStage: "All stages",
-      recommendation: "Water stress moderate, monitor closely",
-      priority: "medium"
-    },
-    {
-      name: "SOC_VIS",
-      value: 0.35,
-      change: "+8%",
-      trend: "up",
-      description: "Soil Organic Carbon Visible",
-      status: "Improving",
-      optimal: { min: 0.3, max: 0.6 },
-      growthStage: "Bare soil",
-      recommendation: "Good soil health improvement",
-      priority: "low"
-    },
-    {
-      name: "RVI",
-      value: 0.62,
-      change: "+1%",
-      trend: "up",
-      description: "Radar Vegetation Index",
-      status: "Good",
-      optimal: { min: 0.5, max: 0.8 },
-      growthStage: "All weather",
-      recommendation: "Stable biomass development",
-      priority: "medium"
-    }
-  ];
+  const indices = generateIndices();
 
   const cropStages = [
     { stage: "Sowing", duration: "0-2 weeks", indices: ["MSAVI2", "SOC_VIS"], status: "complete" },

@@ -16,10 +16,12 @@ const Marketplace = () => {
       deliveryTime: "2-3 days",
       category: "Fertilizer",
       image: "🌾",
-      reason: "Low NDRE detected in Central Field",
+      reason: "AI detected low NDRE in your field - nitrogen deficiency",
       urgency: "High",
-      fieldMatch: "Central Field - 1.2 hectares",
-      discount: 16
+      fieldMatch: "Your Field - 1.2 hectares",
+      discount: 16,
+      aiConfidence: "95%",
+      expectedYield: "+15%"
     },
     {
       id: 2,
@@ -31,15 +33,13 @@ const Marketplace = () => {
       deliveryTime: "5-7 days",
       category: "Equipment",
       image: "💧",
-      reason: "Low soil moisture detected",
+      reason: "AI detected water stress in field analysis",
       urgency: "Medium",
-      fieldMatch: "All fields - water stress",
-      discount: 11
-    }
-  ];
-
-  const allProducts = [
-    ...aiRecommendations,
+      fieldMatch: "All fields - water stress detected",
+      discount: 11,
+      aiConfidence: "87%",
+      expectedYield: "+20%"
+    },
     {
       id: 3,
       name: "Organic Pesticide Spray",
@@ -49,8 +49,18 @@ const Marketplace = () => {
       vendor: "Green Farm Co.",
       deliveryTime: "1-2 days",
       category: "Pesticide",
-      image: "🌿"
-    },
+      image: "🛡️",
+      reason: "AI detected early pest activity in vegetation analysis",
+      urgency: "High",
+      fieldMatch: "Field edges - pest risk",
+      discount: 11,
+      aiConfidence: "92%",
+      expectedYield: "+12%"
+    }
+  ];
+
+  const allProducts = [
+    ...aiRecommendations,
     {
       id: 4,
       name: "Soil pH Testing Kit",
@@ -61,6 +71,28 @@ const Marketplace = () => {
       deliveryTime: "Same day",
       category: "Equipment",
       image: "🧪"
+    },
+    {
+      id: 5,
+      name: "Seed Treatment Solution",
+      price: "₹320",
+      originalPrice: "₹380",
+      rating: 4.4,
+      vendor: "Seed Care Co.",
+      deliveryTime: "1-2 days",
+      category: "Treatment",
+      image: "🌱"
+    },
+    {
+      id: 6,
+      name: "Weather Station",
+      price: "₹12,500",
+      originalPrice: "₹15,000",
+      rating: 4.8,
+      vendor: "Weather Tech",
+      deliveryTime: "3-5 days",
+      category: "Equipment",
+      image: "🌤️"
     }
   ];
 

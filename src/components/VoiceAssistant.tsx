@@ -45,10 +45,8 @@ const VoiceAssistant = ({ currentData, context = "dashboard" }: VoiceAssistantPr
 
   const languages = [
     { code: "hi", name: "हिन्दी (Hindi)", flag: "🇮🇳" },
-    { code: "bho", name: "भोजपुरी (Bhojpuri)", flag: "🌾" },
-    { code: "ta", name: "தமிழ் (Tamil)", flag: "🇮🇳" },
-    { code: "te", name: "తెలుగు (Telugu)", flag: "🇮🇳" },
-    { code: "en", name: "English", flag: "🇬🇧" }
+    { code: "pa", name: "ਪੰਜਾਬੀ (Punjabi)", flag: "🇮🇳" },
+    { code: "en", name: "English", flag: "🇺🇸" }
   ];
 
   const audioGuides: AudioGuide[] = [
