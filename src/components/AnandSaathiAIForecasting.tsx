@@ -82,12 +82,12 @@ export const AnandSaathiAIForecasting: React.FC<AnandSaathiAIForecastingProps> =
       
       setForecastState(prev => ({
         ...prev,
-        comprehensiveAnalysis: analysis,
+        comprehensiveAnalysis: analysis.success ? analysis.data : null,
         isLoading: false,
-        error: null
+        error: analysis.success ? null : analysis.error || null
       }));
 
-      onAnalysisComplete?.(analysis);
+      onAnalysisComplete?.(analysis.success ? analysis.data : null);
       toast.success(t('aiForecasting.analysisComplete'));
     } catch (error) {
       console.error('Error generating comprehensive analysis:', error);
@@ -320,15 +320,15 @@ export const AnandSaathiAIForecasting: React.FC<AnandSaathiAIForecastingProps> =
       
       // Fallback to local market data
       try {
-        const marketData = await anandSaathiBackend.getMarketPrices(selectedField.crop_type || 'rice', 30);
-        
+        const marketData = await anandSaathiBackend.getMarketPrices(selectedField.crop_type || 'rice');
+
         // Convert market data to forecast format
         const forecast: ForecastResult = {
-          predictions: marketData.map((d: any) => d.price),
-          confidence_intervals: marketData.map((d: any) => [d.price * 0.9, d.price * 1.1]),
-          forecast_dates: marketData.map((d: any) => d.date),
+          predictions: marketData.success ? marketData.data?.map((d: any) => d.price) || [] : [],
+          confidence_intervals: marketData.success ? marketData.data?.map((d: any) => [d.price * 0.9, d.price * 1.1]) || [] : [],
+          forecast_dates: marketData.success ? marketData.data?.map((d: any) => d.date) || [] : [],
           accuracy_score: 0.80,
-          model_info: { model: 'MarketAPI', commodity: selectedField.crop_type }
+          model_info: { model: 'MarketAPI', data_type: 'price_forecast', commodity: selectedField.crop_type }
         };
         
         setForecastState(prev => ({

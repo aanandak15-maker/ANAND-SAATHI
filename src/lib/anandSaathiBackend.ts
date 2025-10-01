@@ -3,14 +3,139 @@
  * TypeScript interfaces and API client for backend integration
  */
 
-// Base API configuration
-const API_BASE_URL = 'http://localhost:8000';
+import { createClient } from '@supabase/supabase-js';
+import {
+  FieldSchema,
+  FarmSchema,
+  SignupSchema,
+  SigninSchema,
+  FieldAnalysisSchema,
+  type FieldInput,
+  type FarmInput,
+  type SignupInput,
+  type SigninInput,
+  type FieldAnalysisInput
+} from './validation';
 
-// Field Data Interface
+// Base API configuration
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+// Mock data flag for development - DISABLED FOR PRODUCTION
+const USE_MOCK_DATA = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true';
+
+// Mock data for development
+const MOCK_FIELD_DATA: FieldData[] = [
+  {
+    id: 1,
+    name: 'North Rice Field',
+    crop_type: 'rice',
+    area_acres: 2.5,
+    latitude: 30.9010,
+    longitude: 75.8573,
+    farm_id: 1,
+    created_at: '2024-01-01',
+    soil_type: 'Alluvial',
+    soil_ph: 7.2,
+    soil_moisture: 65,
+    last_irrigation: '2024-01-15',
+    planting_date: '2024-01-01',
+    expected_harvest: '2024-04-15',
+    status: 'growing',
+    farm_name: 'Anand Farm'
+  },
+  {
+    id: 2,
+    name: 'South Wheat Field',
+    crop_type: 'wheat',
+    area_acres: 1.8,
+    latitude: 30.8950,
+    longitude: 75.8623,
+    farm_id: 1,
+    created_at: '2024-01-05',
+    soil_type: 'Clay',
+    soil_ph: 6.8,
+    soil_moisture: 58,
+    last_irrigation: '2024-01-18',
+    planting_date: '2024-01-05',
+    expected_harvest: '2024-04-20',
+    status: 'growing',
+    farm_name: 'Anand Farm'
+  }
+];
+
+// Mock weather data
+const MOCK_WEATHER_DATA = [
+  {
+    id: '1',
+    field_id: '1',
+    date: '2024-01-20',
+    temperature: 22,
+    humidity: 65,
+    rainfall: 0,
+    wind_speed: 12,
+    pressure: 1013,
+    forecast_accuracy: 85
+  },
+  {
+    id: '2',
+    field_id: '1',
+    date: '2024-01-21',
+    temperature: 25,
+    humidity: 58,
+    rainfall: 2,
+    wind_speed: 8,
+    pressure: 1011,
+    forecast_accuracy: 88
+  }
+];
+
+// Mock yield predictions
+const MOCK_YIELD_DATA = [
+  {
+    id: '1',
+    field_id: '1',
+    predicted_yield: 4.2,
+    confidence: 0.85,
+    model_used: 'TimesFM',
+    prediction_date: '2024-01-20',
+    factors: ['weather', 'soil', 'satellite'],
+    scenarios: {
+      optimistic: 4.8,
+      realistic: 4.2,
+      pessimistic: 3.6
+    }
+  }
+];
+
+// Mock market data
+const MOCK_MARKET_DATA = [
+  {
+    id: '1',
+    commodity: 'Rice',
+    predicted_price: 2200,
+    confidence: 0.82,
+    forecast_date: '2024-01-20',
+    actual_price: 2150,
+    accuracy_score: 0.88,
+    trend: 'increasing'
+  }
+];
+export interface ForecastResult {
+  predictions: number[];
+  confidence_intervals: number[][];
+  forecast_dates: string[];
+  accuracy_score: number;
+  model_info: {
+    model: string;
+    data_type: string;
+    confidence?: number;
+    commodity?: string;
+  };
+}
+
 export interface FieldData {
   id: number;
   name: string;
-  crop_type: string;
+  crop_type: 'wheat' | 'rice' | 'maize' | 'sugarcane' | 'soybean' | 'cotton' | 'potato' | 'tomato' | 'other';
   area_acres: number;
   latitude: number;
   longitude: number;
@@ -46,14 +171,59 @@ export interface YieldPrediction {
   id: string;
   field_id: string;
   predicted_yield: number;
-  confidence: number;
-  model_used: string;
   weather_factor: number;
   soil_factor: number;
   satellite_factor: number;
   prediction_date: string;
   actual_yield?: number;
-  accuracy_score?: number;
+}
+
+// Forecast Result Interface for AI predictions
+export interface ForecastResult {
+  predictions: number[];
+  confidence_intervals: number[][];
+  forecast_dates: string[];
+  accuracy_score: number;
+  model_info: {
+    model: string;
+    data_type: string;
+    confidence?: number;
+    commodity?: string;
+  };
+}
+
+// Comprehensive Analysis Interface
+export interface AnandSaathiAnalysis {
+  field: FieldData;
+  yield_forecast: {
+    predicted_yield: number;
+    confidence: number;
+    trend: string;
+    factors?: string[];
+  };
+  weather_forecast: {
+    avg_temperature: number;
+    confidence: number;
+    trend: string;
+    precipitation_days?: number;
+  };
+  market_forecast: {
+    predicted_price: number;
+    confidence: number;
+    trend: string;
+    volatility?: number;
+  };
+  recommendations: string[];
+  timestamp: string;
+  ai_confidence?: number;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+  timestamp?: string;
 }
 
 // Weather Forecast Interface
@@ -65,7 +235,6 @@ export interface WeatherForecast {
   humidity: number;
   rainfall: number;
   wind_speed: number;
-  pressure: number;
   forecast_accuracy: number;
 }
 
@@ -80,32 +249,95 @@ export interface MarketForecast {
   accuracy_score?: number;
 }
 
-// API Response Interface
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
-}
-
-// Backend API Client
 class AnandSaathiBackendAPI {
   private baseUrl: string;
+  private supabase: any;
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
+    // Initialize Supabase client for authentication
+    this.supabase = createClient(
+      import.meta.env.VITE_SUPABASE_URL,
+      import.meta.env.VITE_SUPABASE_ANON_KEY
+    );
+  }
+
+  private async getMockResponse<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+    // Simulate network delay
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        let mockData: any = null;
+
+        // Route-based mock data
+        if (endpoint.includes('/api/fields')) {
+          if (options.method === 'POST') {
+            mockData = { ...MOCK_FIELD_DATA[0], id: Date.now() };
+          } else {
+            mockData = MOCK_FIELD_DATA;
+          }
+        } else if (endpoint.includes('/api/weather')) {
+          mockData = MOCK_WEATHER_DATA;
+        } else if (endpoint.includes('/api/yield-predictions') || endpoint.includes('/api/predict/yield')) {
+          if (options.method === 'POST') {
+            mockData = {
+              ...MOCK_YIELD_DATA[0],
+              id: Date.now().toString(),
+              prediction_date: new Date().toISOString()
+            };
+          } else {
+            mockData = MOCK_YIELD_DATA;
+          }
+        } else if (endpoint.includes('/api/market')) {
+          mockData = MOCK_MARKET_DATA;
+        } else if (endpoint.includes('/api/health')) {
+          mockData = {
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            uptime: '99.9%',
+            version: '1.0.0'
+          };
+        } else {
+          // Default mock response
+          mockData = {
+            message: 'Mock data response',
+            timestamp: new Date().toISOString()
+          };
+        }
+
+        resolve({
+          success: true,
+          data: mockData,
+          message: 'Mock data loaded successfully'
+        });
+      }, 300); // Simulate 300ms network delay
+    });
   }
 
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
+    // Use mock data for development only if explicitly enabled
+    if (USE_MOCK_DATA) {
+      return this.getMockResponse<T>(endpoint, options);
+    }
+
     try {
+      // Get authentication token from Supabase
+      const { data: { session } } = await this.supabase.auth.getSession();
+
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      } as any;
+
+      // Add authentication header if available
+      if (session?.access_token) {
+        (headers as any).Authorization = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+        headers,
         ...options,
       });
 
@@ -161,36 +393,32 @@ class AnandSaathiBackendAPI {
     return this.request<FieldData>(`/api/fields/${fieldId}`);
   }
 
-  async createField(field: Omit<FieldData, 'id' | 'created_at' | 'updated_at'>): Promise<ApiResponse<FieldData>> {
+  async createField(field: FieldInput): Promise<ApiResponse<FieldData>> {
+    // Validate input
+    const validationResult = FieldSchema.safeParse(field);
+    if (!validationResult.success) {
+      return {
+        success: false,
+        error: `Validation failed: ${validationResult.error.message}`
+      };
+    }
+
     return this.request<FieldData>('/api/fields', {
       method: 'POST',
       body: JSON.stringify(field),
     });
   }
 
-  async updateField(fieldId: string, field: Partial<FieldData>): Promise<ApiResponse<FieldData>> {
-    return this.request<FieldData>(`/api/fields/${fieldId}`, {
-      method: 'PUT',
-      body: JSON.stringify(field),
-    });
-  }
+  async createFarm(farm: FarmInput): Promise<ApiResponse<FarmData>> {
+    // Validate input
+    const validationResult = FarmSchema.safeParse(farm);
+    if (!validationResult.success) {
+      return {
+        success: false,
+        error: `Validation failed: ${validationResult.error.message}`
+      };
+    }
 
-  async deleteField(fieldId: string): Promise<ApiResponse<void>> {
-    return this.request<void>(`/api/fields/${fieldId}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // Farm Management
-  async getFarms(): Promise<ApiResponse<FarmData[]>> {
-    return this.request<FarmData[]>('/api/farms');
-  }
-
-  async getFarm(farmId: string): Promise<ApiResponse<FarmData>> {
-    return this.request<FarmData>(`/api/farms/${farmId}`);
-  }
-
-  async createFarm(farm: Omit<FarmData, 'id' | 'created_at' | 'updated_at'>): Promise<ApiResponse<FarmData>> {
     return this.request<FarmData>('/api/farms', {
       method: 'POST',
       body: JSON.stringify(farm),
@@ -238,8 +466,9 @@ class AnandSaathiBackendAPI {
   }
 
   // Market Intelligence
-  async getMarketPrices(): Promise<ApiResponse<any[]>> {
-    return this.request<any[]>('/api/market/prices');
+  async getMarketPrices(commodity?: string): Promise<ApiResponse<any[]>> {
+    const endpoint = commodity ? `/api/market/prices?commodity=${commodity}` : '/api/market/prices';
+    return this.request<any[]>(endpoint);
   }
 
   async getMarketAnalysis(commodity: string): Promise<ApiResponse<any>> {
@@ -306,10 +535,136 @@ class AnandSaathiBackendAPI {
     return this.request<any>('/api/realtime/analytics');
   }
 
-  // Health Check
-  async healthCheck(): Promise<ApiResponse<any>> {
-    return this.request<any>('/api/health');
+  // Authentication methods
+  async signUp(email: string, password: string, userData?: any) {
+    // Validate input
+    const validationResult = SignupSchema.safeParse({ email, password, ...userData });
+    if (!validationResult.success) {
+      return {
+        success: false,
+        error: `Validation failed: ${validationResult.error.message}`
+      };
+    }
+
+    try {
+      const { data, error } = await this.supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userData
+        }
+      });
+
+      if (error) throw error;
+
+      return {
+        success: true,
+        data,
+        message: 'Account created successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Signup failed'
+      };
+    }
   }
+
+  async signIn(email: string, password: string) {
+    // Validate input
+    const validationResult = SigninSchema.safeParse({ email, password });
+    if (!validationResult.success) {
+      return {
+        success: false,
+        error: `Validation failed: ${validationResult.error.message}`
+      };
+    }
+
+    try {
+      const { data, error } = await this.supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+
+      return {
+        success: true,
+        data,
+        message: 'Signed in successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Sign in failed'
+      };
+    }
+  }
+
+  async signOut() {
+    try {
+      const { error } = await this.supabase.auth.signOut();
+      if (error) throw error;
+
+      return {
+        success: true,
+        message: 'Signed out successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Sign out failed'
+      };
+    }
+  }
+
+  async forecastCropYield(fieldData: FieldData): Promise<ForecastResult> {
+    // Mock yield forecast - in production this would use TimesFM API
+    const baseYield = fieldData.area_acres * 2.5; // Base yield per acre
+    const variance = 0.3; // 30% variance
+
+    return {
+      predictions: [
+        baseYield * (1 - variance),
+        baseYield,
+        baseYield * (1 + variance)
+      ],
+      confidence_intervals: [
+        [baseYield * (1 - variance * 1.5), baseYield * (1 - variance * 0.5)],
+        [baseYield * 0.9, baseYield * 1.1],
+        [baseYield * (1 + variance * 0.5), baseYield * (1 + variance * 1.5)]
+      ],
+      forecast_dates: [
+        new Date().toISOString(),
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString()
+      ],
+      accuracy_score: 0.85,
+      model_info: {
+        model: 'Local Forecast Model',
+        data_type: 'yield_prediction',
+        confidence: 0.85
+      }
+    };
+  }
+
+  async getWeatherData(latitude: number, longitude: number, days: number = 7): Promise<any[]> {
+    // Mock weather data - in production this would use weather APIs
+    const weatherData = [];
+    for (let i = 0; i < days; i++) {
+      const date = new Date(Date.now() + i * 24 * 60 * 60 * 1000);
+      weatherData.push({
+        date: date.toISOString(),
+        temperature: 20 + Math.random() * 15, // 20-35°C
+        humidity: 50 + Math.random() * 40, // 50-90%
+        rainfall: Math.random() * 10, // 0-10mm
+        wind_speed: Math.random() * 20, // 0-20 km/h
+        pressure: 1000 + Math.random() * 50 // 1000-1050 hPa
+      });
+    }
+    return weatherData;
+  }
+
 
   async getComprehensiveAnalysis(fieldData: FieldData): Promise<ApiResponse<any>> {
     try {
@@ -535,13 +890,3 @@ class AnandSaathiBackendAPI {
 
 // Create and export the backend instance
 export const anandSaathiBackend = new AnandSaathiBackendAPI();
-
-// Export types for use in components
-export type {
-  FieldData,
-  FarmData,
-  YieldPrediction,
-  WeatherForecast,
-  MarketForecast,
-  ApiResponse,
-};

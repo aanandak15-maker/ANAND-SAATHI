@@ -122,11 +122,11 @@ const AnandSaathiEnhancedFieldMapper: React.FC<AnandSaathiEnhancedFieldMapperPro
   const [activeTab, setActiveTab] = useState('mapping');
   const [fieldData, setFieldData] = useState<Partial<FieldData>>({
     name: '',
-    crop_type: 'Rice',
+    crop_type: 'rice', // Fix: use lowercase enum value
     area_acres: 0,
     latitude: 0,
     longitude: 0,
-    farm_id: farmId
+    farm_id: typeof farmId === 'string' ? parseInt(farmId) || 1 : farmId || 1, // Convert string to number or use default
   });
   const [mappingState, setMappingState] = useState<MappingState>({
     method: 'gps_walk',
@@ -161,7 +161,6 @@ const AnandSaathiEnhancedFieldMapper: React.FC<AnandSaathiEnhancedFieldMapperPro
     zoom: 15,
     mapTypeId: 'satellite',
     enableDrawing: true,
-    enabled: activeTab === 'google-maps', // Only initialize when Google Maps tab is active
     onMapClick: (event) => {
       if (event.latLng) {
         const lat = event.latLng.lat();
@@ -171,7 +170,8 @@ const AnandSaathiEnhancedFieldMapper: React.FC<AnandSaathiEnhancedFieldMapperPro
         setFieldData(prev => ({
           ...prev,
           latitude: lat,
-          longitude: lng
+          longitude: lng,
+          farm_id: typeof farmId === 'string' ? parseInt(farmId) || 1 : farmId || 1 // Convert string to number or use default
         }));
       }
     },
@@ -181,15 +181,15 @@ const AnandSaathiEnhancedFieldMapper: React.FC<AnandSaathiEnhancedFieldMapperPro
         lat: latLng.lat(),
         lng: latLng.lng()
       }));
-      
+
       const area = calculateArea(coordinates);
-      
+
       setMappingState(prev => ({
         ...prev,
         polygon: coordinates,
         area: area
       }));
-      
+
       setFieldData(prev => ({
         ...prev,
         area_acres: area
@@ -733,17 +733,17 @@ const AnandSaathiEnhancedFieldMapper: React.FC<AnandSaathiEnhancedFieldMapperPro
       const newField: FieldData = {
         id: Date.now().toString(),
         name: fieldData.name,
-        crop_type: fieldData.crop_type || 'Rice',
+        crop_type: (fieldData.crop_type || 'rice') as 'wheat' | 'rice' | 'maize' | 'sugarcane' | 'soybean' | 'cotton' | 'potato' | 'tomato' | 'other', // Ensure valid enum value
         area_acres: fieldData.area_acres,
         latitude: currentLocation?.latitude || 0,
         longitude: currentLocation?.longitude || 0,
-        farm_id: farmId,
+        farm_id: typeof farmId === 'string' ? parseInt(farmId) || 1 : farmId || 1, // Convert string to number or use default
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
       const result = await anandSaathiBackend.createField(newField);
-      
+
       if (result.success) {
         toast.success(isPunjabi ? 'ਖੇਤ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਿਆ!' : isHindi ? 'खेत सफलतापूर्वक सेव हो गया!' : 'Field saved successfully!');
         onFieldCreated?.(newField);
@@ -2064,14 +2064,18 @@ const AnandSaathiEnhancedFieldMapper: React.FC<AnandSaathiEnhancedFieldMapperPro
                         </label>
                         <select
                           value={fieldData.crop_type}
-                          onChange={(e) => setFieldData(prev => ({ ...prev, crop_type: e.target.value }))}
+                          onChange={(e) => setFieldData(prev => ({ ...prev, crop_type: e.target.value as any }))}
                           className="w-full p-2 border rounded text-sm"
                         >
-                          <option value="Rice">{isPunjabi ? 'ਚੌਲ' : isHindi ? 'चावल' : 'Rice'}</option>
-                          <option value="Wheat">{isPunjabi ? 'ਗੇਹੂੰ' : isHindi ? 'गेहूं' : 'Wheat'}</option>
-                          <option value="Corn">{isPunjabi ? 'ਮੱਕੀ' : isHindi ? 'मक्का' : 'Corn'}</option>
-                          <option value="Sugarcane">{isPunjabi ? 'ਗੰਨਾ' : isHindi ? 'गन्ना' : 'Sugarcane'}</option>
-                          <option value="Cotton">{isPunjabi ? 'ਕਪਾਹ' : isHindi ? 'कपास' : 'Cotton'}</option>
+                          <option value="rice">{isPunjabi ? 'ਚੌਲ' : isHindi ? 'चावल' : 'Rice'}</option>
+                          <option value="wheat">{isPunjabi ? 'ਗੇਹੂੰ' : isHindi ? 'गेहूं' : 'Wheat'}</option>
+                          <option value="maize">{isPunjabi ? 'ਮੱਕੀ' : isHindi ? 'मक्का' : 'Maize'}</option>
+                          <option value="sugarcane">{isPunjabi ? 'ਗੰਨਾ' : isHindi ? 'गन्ना' : 'Sugarcane'}</option>
+                          <option value="cotton">{isPunjabi ? 'ਕਪਾਹ' : isHindi ? 'कपास' : 'Cotton'}</option>
+                          <option value="soybean">{isPunjabi ? 'ਸੋਇਆਬੀਨ' : isHindi ? 'सोयाबीन' : 'Soybean'}</option>
+                          <option value="potato">{isPunjabi ? 'ਆਲੂ' : isHindi ? 'आलू' : 'Potato'}</option>
+                          <option value="tomato">{isPunjabi ? 'ਟਮਾਟਰ' : isHindi ? 'टमाटर' : 'Tomato'}</option>
+                          <option value="other">{isPunjabi ? 'ਹੋਰ' : isHindi ? 'अन्य' : 'Other'}</option>
                         </select>
                       </div>
                       <div>

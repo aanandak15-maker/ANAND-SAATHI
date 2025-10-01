@@ -4,8 +4,8 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
-import { GOOGLE_MAPS_CONFIG, createMapLoader, coordinateUtils } from '@/lib/googleMapsConfig';
+import { setOptions } from '@googlemaps/js-api-loader';
+import { GOOGLE_MAPS_CONFIG, coordinateUtils } from '@/lib/googleMapsConfig';
 
 // Declare google.maps types for TypeScript
 declare global {
@@ -46,7 +46,6 @@ export const useGoogleMaps = (options: UseGoogleMapsOptions = {}) => {
   const [initAttempts, setInitAttempts] = useState(0);
 
   const mapRef = useRef<HTMLDivElement>(null);
-  const loaderRef = useRef<Loader | null>(null);
 
   // Initialize Google Maps
   const initializeMap = useCallback(async () => {
@@ -75,18 +74,20 @@ export const useGoogleMaps = (options: UseGoogleMapsOptions = {}) => {
     }
 
     try {
-      // Create loader if not exists
-      if (!loaderRef.current) {
-        loaderRef.current = new Loader(createMapLoader());
-      }
+      console.log('Loading Google Maps API...');
 
-      // Load Google Maps API
-      await loaderRef.current.load();
+      // Set options for Google Maps API
+      setOptions({
+        key: GOOGLE_MAPS_CONFIG.apiKey,
+        v: 'weekly'
+      });
 
       // Wait for Google Maps to be available
       if (!window.google || !window.google.maps) {
         throw new Error('Google Maps API not loaded');
       }
+
+      console.log('Google Maps API loaded successfully');
 
       // Double-check DOM element is still available
       if (!mapRef.current) {
@@ -97,7 +98,7 @@ export const useGoogleMaps = (options: UseGoogleMapsOptions = {}) => {
       const map = new window.google.maps.Map(mapRef.current, {
         center: options.center || GOOGLE_MAPS_CONFIG.defaultCenter,
         zoom: options.zoom || GOOGLE_MAPS_CONFIG.defaultZoom,
-        mapTypeId: options.mapTypeId || window.google.maps.MapTypeId.SATELLITE,
+        mapTypeId: window.google.maps.MapTypeId.SATELLITE,
         mapTypeControl: true,
         streetViewControl: false,
         fullscreenControl: true,
