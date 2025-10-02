@@ -2,22 +2,16 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  MapPin, 
-  Navigation, 
-  Target, 
-  Save, 
+import {
+  MapPin,
+  Navigation,
+  Target,
   RotateCcw,
   Satellite,
   CheckCircle,
   AlertTriangle
 } from "lucide-react";
-
-declare global {
-  interface Window {
-    google: any;
-  }
-}
+import { loadGoogleMaps } from '@/lib/googleMapsLoader';
 
 interface GPSPoint {
   lat: number;
@@ -38,26 +32,20 @@ const GoogleFieldMapper = ({ onComplete }: { onComplete: (fieldData: any) => voi
   const polygonRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
 
-  // Load Google Maps
+  // Load Google Maps using centralized loader
   useEffect(() => {
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-    if (!apiKey) {
-      console.error('Google Maps API key not found');
-      return;
-    }
-
-    if (!window.google) {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
+    const initializeGoogleMaps = async () => {
+      try {
+        console.log('Loading Google Maps for field mapper...');
+        await loadGoogleMaps();
+        console.log('Google Maps loaded successfully for field mapper');
         setIsMapLoaded(true);
-      };
-      document.head.appendChild(script);
-    } else {
-      setIsMapLoaded(true);
-    }
+      } catch (error) {
+        console.error('Failed to load Google Maps for field mapper:', error);
+      }
+    };
+
+    initializeGoogleMaps();
   }, []);
 
   // Initialize map when in pin mode

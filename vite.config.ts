@@ -4,9 +4,15 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-server: {
-    host: "::",
+  server: {
+    host: "0.0.0.0",
     port: 5173,
+    hmr: {
+      port: 24678, // Use a different port for HMR WebSocket
+    },
+    watch: {
+      usePolling: true,
+    },
   },
   plugins: [
     react(),

@@ -391,7 +391,7 @@ const SimpleFieldMapper = ({ onComplete, onBack }: SimpleFieldMapperProps) => {
                   }}
                 >
                   <img 
-                    src={`https://maps.googleapis.com/maps/api/staticmap?center=${mapCenter.lat},${mapCenter.lng}&zoom=${zoomLevel}&size=800x600&maptype=satellite&key=AIzaSyBZlJtstGEj9wCMP5_O5PaGytIi-iForN0`}
+                    src={`https://maps.googleapis.com/maps/api/staticmap?center=${mapCenter.lat},${mapCenter.lng}&zoom=${zoomLevel}&size=800x600&maptype=satellite&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBZlJtstGEj9wCMP5_O5PaGytIi-iForN0'}`}
                     alt="Satellite Map"
                     className="w-full h-full object-cover opacity-80"
                     onError={(e) => {

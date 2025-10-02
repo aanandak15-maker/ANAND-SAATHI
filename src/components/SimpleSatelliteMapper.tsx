@@ -98,9 +98,10 @@ const SimpleSatelliteMapper = ({ onComplete }: SimpleSatelliteMapperProps) => {
   const getSatelliteMapUrl = () => {
     const { lat, lng } = mapCenter;
     const zoom = Math.max(15, zoomLevel);
-    
+
     // Use Google Maps Embed API for reliable satellite imagery
-    return `https://www.google.com/maps/embed/v1/view?key=AIzaSyBZlJtstGEj9wCMP5_O5PaGytIi-iForN0&center=${lat},${lng}&zoom=${zoom}&maptype=satellite`;
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBZlJtstGEj9wCMP5_O5PaGytIi-iForN0';
+    return `https://www.google.com/maps/embed/v1/view?key=${apiKey}&center=${lat},${lng}&zoom=${zoom}&maptype=satellite`;
   };
 
   // Handle manual coordinate input for pin placement

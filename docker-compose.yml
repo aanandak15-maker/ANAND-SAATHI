@@ -24,6 +24,54 @@ services:
       retries: 3
       start_period: 40s
 
+  # TimesFM AI Service for real neural network predictions
+  timesfm:
+    build:
+      context: ./timesfm_service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/home/timesfm/app
+      - TIMESFM_MODEL_CACHE=/home/timesfm/app/cache
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - timesfm_cache:/home/timesfm/app/cache
+    networks:
+      - anand-saathi-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 120s  # Allow time for model loading
+
+  # Satellite Processing Service for real vegetation analysis
+  satellite:
+    build:
+      context: ./satellite_service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - PYTHONPATH=/home/satellite/app
+      - SATELLITE_CACHE=/home/satellite/app/satellite_cache
+      - PYTHONUNBUFFERED=1
+      - GDAL_DISABLE_READDIR_ON_OPEN=YES
+      - GEE_API_KEY=${GEE_API_KEY}
+    volumes:
+      - satellite_cache:/home/satellite/app/satellite_cache
+    networks:
+      - anand-saathi-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+
   # Backend API server
   backend:
     build:
@@ -40,8 +88,12 @@ services:
       - GEE_API_KEY=${GEE_API_KEY}
       - SENTRY_DSN=${SENTRY_DSN}
       - LOG_LEVEL=info
+      - TIMEsFM_SERVICE_URL=http://timesfm:8000
     depends_on:
-      - database
+      timesfm:
+        condition: service_healthy
+      database:
+        condition: service_healthy
     networks:
       - anand-saathi-network
     restart: unless-stopped
@@ -113,4 +165,8 @@ volumes:
   db_data:
     driver: local
   redis_data:
+    driver: local
+  timesfm_cache:
+    driver: local
+  satellite_cache:
     driver: local

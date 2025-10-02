@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Maps Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-container { max-width: 800px; margin: 0 auto; }
+        .test-result { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        #map { height: 400px; width: 100%; margin: 20px 0; border: 2px solid #ccc; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Google Maps Loading Test</h1>
+
+        <div id="test-results">
+            <div class="test-result info">
+                <strong>Test 1:</strong> Checking API Key...
+                <div id="apikey-result">Loading...</div>
+            </div>
+
+            <div class="test-result info">
+                <strong>Test 2:</strong> Loading Google Maps Script...
+                <div id="script-result">Loading...</div>
+            </div>
+
+            <div class="test-result info">
+                <strong>Test 3:</strong> Initializing Map...
+                <div id="map-result">Loading...</div>
+            </div>
+        </div>
+
+        <div id="map"></div>
+
+        <button onclick="runTests()" style="padding: 10px 20px; margin: 10px 0; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            Run Tests Again
+        </button>
+    </div>
+
+    <script>
+        let testResults = {
+            apikey: false,
+            script: false,
+            map: false
+        };
+
+        function updateResult(testId, success, message) {
+            const element = document.getElementById(testId + '-result');
+            element.innerHTML = message;
+            element.className = success ? 'test-result success' : 'test-result error';
+        }
+
+        async function runTests() {
+            console.log('Starting Google Maps tests...');
+
+            // Test 1: Check API Key
+            try {
+                const response = await fetch('https://maps.googleapis.com/maps/api/js?key=AIzaSyBZlJtstGEj9wCMP5_O5PaGytIi-iForN0&libraries=geometry', {
+                    method: 'HEAD'
+                });
+                if (response.ok) {
+                    testResults.apikey = true;
+                    updateResult('apikey', true, '✅ API Key is valid (Status: ' + response.status + ')');
+                } else {
+                    testResults.apikey = false;
+                    updateResult('apikey', false, '❌ API Key issue (Status: ' + response.status + ')');
+                }
+            } catch (error) {
+                testResults.apikey = false;
+                updateResult('apikey', false, '❌ Network error: ' + error.message);
+            }
+
+            // Test 2: Load Script
+            if (testResults.apikey) {
+                if (window.google && window.google.maps) {
+                    testResults.script = true;
+                    updateResult('script', true, '✅ Google Maps script already loaded');
+                    initializeMap();
+                } else {
+                    const script = document.createElement('script');
+                    script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyBZlJtstGEj9wCMP5_O5PaGytIi-iForN0&libraries=geometry,visualization';
+                    script.async = true;
+                    script.defer = true;
+
+                    script.onload = () => {
+                        testResults.script = true;
+                        updateResult('script', true, '✅ Google Maps script loaded successfully');
+                        initializeMap();
+                    };
+
+                    script.onerror = (error) => {
+                        testResults.script = false;
+                        updateResult('script', false, '❌ Failed to load Google Maps script');
+                    };
+
+                    document.head.appendChild(script);
+                }
+            }
+
+            // Test 3: Initialize Map
+            function initializeMap() {
+                if (window.google && window.google.maps && !testResults.map) {
+                    try {
+                        const map = new window.google.maps.Map(document.getElementById('map'), {
+                            center: { lat: 25.9848, lng: 85.6709 },
+                            zoom: 16,
+                            mapTypeId: window.google.maps.MapTypeId.SATELLITE
+                        });
+
+                        testResults.map = true;
+                        updateResult('map', true, '✅ Map initialized successfully');
+
+                        // Add a marker
+                        new window.google.maps.Marker({
+                            position: { lat: 25.9848, lng: 85.6709 },
+                            map: map,
+                            title: 'Test Location'
+                        });
+
+                    } catch (error) {
+                        testResults.map = false;
+                        updateResult('map', false, '❌ Map initialization failed: ' + error.message);
+                    }
+                }
+            }
+
+            // Initialize map if script is already loaded
+            if (window.google && window.google.maps) {
+                initializeMap();
+            }
+        }
+
+        // Auto-run tests on page load
+        document.addEventListener('DOMContentLoaded', runTests);
+    </script>
+</body>
+</html>

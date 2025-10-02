@@ -6,8 +6,8 @@
 import { API_KEYS } from '@/config/apiKeys';
 
 export const GOOGLE_MAPS_CONFIG = {
-  // Google Maps API Key from configuration
-  apiKey: API_KEYS.GOOGLE_MAPS,
+  // Google Maps API Key from configuration - uses development key for local dev
+  apiKey: API_KEYS.GOOGLE_MAPS.DEFAULT,
   
   // Default map settings
   defaultCenter: {

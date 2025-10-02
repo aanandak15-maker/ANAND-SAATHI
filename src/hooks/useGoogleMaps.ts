@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { setOptions } from '@googlemaps/js-api-loader';
+import { loadGoogleMaps } from '@/lib/googleMapsLoader';
 import { GOOGLE_MAPS_CONFIG, coordinateUtils } from '@/lib/googleMapsConfig';
 
 // Declare google.maps types for TypeScript
@@ -47,6 +47,8 @@ export const useGoogleMaps = (options: UseGoogleMapsOptions = {}) => {
 
   const mapRef = useRef<HTMLDivElement>(null);
 
+  // Load Google Maps script directly
+
   // Initialize Google Maps
   const initializeMap = useCallback(async () => {
     // Don't initialize if not enabled
@@ -75,17 +77,10 @@ export const useGoogleMaps = (options: UseGoogleMapsOptions = {}) => {
 
     try {
       console.log('Loading Google Maps API...');
+      console.log('API Key:', GOOGLE_MAPS_CONFIG.apiKey ? 'Set' : 'Not set');
 
-      // Set options for Google Maps API
-      setOptions({
-        key: GOOGLE_MAPS_CONFIG.apiKey,
-        v: 'weekly'
-      });
-
-      // Wait for Google Maps to be available
-      if (!window.google || !window.google.maps) {
-        throw new Error('Google Maps API not loaded');
-      }
+      // Load Google Maps script using centralized loader
+      await loadGoogleMaps();
 
       console.log('Google Maps API loaded successfully');
 
@@ -98,7 +93,7 @@ export const useGoogleMaps = (options: UseGoogleMapsOptions = {}) => {
       const map = new window.google.maps.Map(mapRef.current, {
         center: options.center || GOOGLE_MAPS_CONFIG.defaultCenter,
         zoom: options.zoom || GOOGLE_MAPS_CONFIG.defaultZoom,
-        mapTypeId: window.google.maps.MapTypeId.SATELLITE,
+        mapTypeId: 'satellite',
         mapTypeControl: true,
         streetViewControl: false,
         fullscreenControl: true,
@@ -109,13 +104,118 @@ export const useGoogleMaps = (options: UseGoogleMapsOptions = {}) => {
         gestureHandling: 'greedy'
       });
 
-      // Create drawing manager if enabled (DISABLED due to deprecation)
+      // Force satellite view and refresh
+      console.log('Setting satellite view...');
+      map.setMapTypeId('satellite');
+
+      // Force a map refresh after initialization
+      setTimeout(() => {
+        window.google.maps.event.trigger(map, 'resize');
+        console.log('Map refreshed with satellite view');
+      }, 1000);
+
+      // Create drawing manager if enabled (ENABLED - Google Maps drawing is fully supported)
       let drawingManager: any = null;
-      
+
       if (options.enableDrawing) {
-        console.log('Drawing functionality disabled due to Google Maps API deprecation');
-        // Drawing manager disabled due to Google Maps API deprecation
-        // All drawing functionality moved to custom drawing hook
+        console.log('Initializing Google Maps Drawing Manager...');
+
+        try {
+          // Verify drawing library is available
+          if (!window.google?.maps?.drawing?.DrawingManager) {
+            console.error('❌ Google Maps Drawing library not available');
+            console.log('Available APIs:', Object.keys(window.google?.maps || {}));
+          } else {
+            drawingManager = new window.google.maps.drawing.DrawingManager({
+              drawingMode: null,
+              drawingControl: true, // Enable drawing controls on map
+              drawingControlOptions: {
+                position: window.google.maps.ControlPosition.TOP_LEFT,
+                drawingModes: [
+                  window.google.maps.drawing.OverlayType.POLYGON,
+                  window.google.maps.drawing.OverlayType.RECTANGLE
+                ]
+              },
+              polygonOptions: {
+                fillColor: '#2196F3',
+                strokeColor: '#1976D2',
+                fillOpacity: 0.3,
+                strokeWeight: 3,
+                clickable: true,
+                editable: true,
+                draggable: true,
+                zIndex: 1
+              },
+              rectangleOptions: {
+                fillColor: '#4CAF50',
+                strokeColor: '#388E3C',
+                fillOpacity: 0.3,
+                strokeWeight: 3,
+                clickable: true,
+                editable: true,
+                draggable: true,
+                zIndex: 1
+              }
+            });
+
+            drawingManager.setMap(map);
+
+            // Add event listeners for shape completion
+            drawingManager.addListener('polygoncomplete', (polygon: any) => {
+              console.log('🎯 Polygon completed via Drawing Manager');
+
+              // Calculate area using Google Maps
+              const areaInSquareMeters = window.google.maps.geometry.spherical.computeArea(polygon.getPath());
+              const areaInAcres = areaInSquareMeters / 4046.8564224; // Accurate conversion
+
+              console.log(`📐 ${areaInAcres.toFixed(3)} acres calculated`);
+
+              // Convert to our format
+              const coordinates = polygon.getPath().getArray().map((point: any) => ({
+                lat: point.lat(),
+                lng: point.lng()
+              }));
+
+              // Notify parent component
+              if (options.onPolygonComplete) {
+                const shapeData = {
+                  type: 'polygon' as const,
+                  points: coordinates,
+                  area: areaInAcres,
+                  path: polygon.getPath()
+                };
+                options.onPolygonComplete(polygon);
+              }
+            });
+
+            drawingManager.addListener('rectanglecomplete', (rectangle: any) => {
+              console.log('🎯 Rectangle completed via Drawing Manager');
+
+              // For rectangle, we need to get the area differently
+              const bounds = rectangle.getBounds();
+              const areaInSquareMeters = window.google.maps.geometry.spherical.computeArea([
+                bounds.getNorthEast(),
+                bounds.getSouthEast(),
+                bounds.getSouthWest(),
+                bounds.getNorthWest()
+              ]);
+              const areaInAcres = areaInSquareMeters / 4046.8564224;
+
+              console.log(`📐 Rectangle: ${areaInAcres.toFixed(3)} acres calculated`);
+
+              // Notify parent component
+              if (options.onPolygonComplete) {
+                options.onPolygonComplete(rectangle);
+              }
+            });
+
+            console.log('✅ Drawing Manager initialized successfully');
+            console.log('🎨 Available drawing tools: Polygon, Rectangle');
+          }
+        } catch (error) {
+          console.error('❌ Error initializing Drawing Manager:', error);
+          drawingManager = null;
+        }
       }
 
       // Add map click listener
@@ -135,13 +235,16 @@ export const useGoogleMaps = (options: UseGoogleMapsOptions = {}) => {
 
     } catch (error) {
       console.error('Error initializing Google Maps:', error);
-      setMapInstance(prev => ({
-        ...prev,
-        error: error instanceof Error ? error.message : 'Failed to load Google Maps',
-        isLoaded: false
-      }));
+      console.error('Google Maps status at error:', {
+        hasGoogle: !!window.google,
+        hasMaps: !!(window.google && window.google.maps),
+        hasMapClass: !!(window.google && window.google.maps && window.google.maps.Map),
+        apiKeySet: !!GOOGLE_MAPS_CONFIG.apiKey
+      });
+
+      setMapInstance(prev => ({ ...prev, error: error instanceof Error ? error.message : 'Unknown error' }));
     }
-  }, [options]);
+  }, [options, GOOGLE_MAPS_CONFIG, initAttempts, mapInstance.isLoaded, mapInstance.error, mapRef]);
 
   // Load map on mount with proper timing
   useEffect(() => {

@@ -1,0 +1,15 @@
+{
+  "appId": "com.anandsaathi.farmer",
+  "appName": "अनंद साथी - Anand Saathi",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "ios": {
+    "scheme": "AnandSaathi"
+  },
+  "android": {
+    "scheme": "anandsaathi"
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

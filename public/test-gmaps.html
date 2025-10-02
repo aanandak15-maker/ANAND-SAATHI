@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google Maps Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #map { height: 400px; width: 100%; border: 1px solid #ccc; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .loading { background-color: #e3f2fd; color: #1976d2; }
+        .success { background-color: #e8f5e8; color: #2e7d32; }
+        .error { background-color: #ffebee; color: #c62828; }
+    </style>
+    <script src="/debug-gmaps.js"></script>
+</head>
+<body>
+    <h1>Google Maps Loading Test</h1>
+    <div id="status" class="status loading">Testing Google Maps loading...</div>
+    <div id="map"></div>
+    <button onclick="testManualLoad()">Test Manual Load</button>
+    <button onclick="checkEnvironment()">Check Environment</button>
+    
+    <script>
+        let loadAttempts = 0;
+        const maxAttempts = 3;
+        
+        function updateStatus(message, type = 'loading') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        function checkEnvironment() {
+            console.log('Environment check:');
+            console.log('Window object:', typeof window);
+            console.log('Document object:', typeof document);
+            console.log('Google API key available:', !!window.env?.VITE_GOOGLE_MAPS_API_KEY);
+            console.log('Navigator user agent:', navigator.userAgent);
+            console.log('Browser online:', navigator.onLine);
+            
+            updateStatus(`Environment checked - see console for details`, 'success');
+        }
+        
+        function testManualLoad() {
+            updateStatus('Testing manual Google Maps load...', 'loading');
+            
+            if (loadAttempts >= maxAttempts) {
+                updateStatus('Max load attempts reached', 'error');
+                return;
+            }
+            
+            loadAttempts++;
+            
+            // Create script element manually
+            const script = document.createElement('script');
+            const apiKey = 'AIzaSyBZlJtstGEj9wCMP5_O5PaGytIi-iForN0'; // From your .env file
+            const callbackName = `gmapsCallback_${Date.now()}`;
+            
+            window[callbackName] = function() {
+                console.log('Google Maps loaded successfully via manual method');
+                updateStatus('Google Maps loaded successfully!', 'success');
+                
+                if (window.google && window.google.maps) {
+                    initMap();
+                }
+            };
+            
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry,places,visualization,drawing&loading=async&callback=${callbackName}`;
+            script.async = true;
+            script.defer = true;
+            
+            script.onerror = function(error) {
+                console.error('Script failed to load:', error);
+                updateStatus(`Load attempt ${loadAttempts} failed - check console`, 'error');
+            };
+            
+            script.onload = function() {
+                console.log('Script element loaded, waiting for callback...');
+                // Set a timeout in case callback doesn't fire
+                setTimeout(() => {
+                    if (!window.google || !window.google.maps) {
+                        updateStatus(`Load attempt ${loadAttempts} timed out`, 'error');
+                    }
+                }, 5000);
+            };
+            
+            document.head.appendChild(script);
+        }
+        
+        function initMap() {
+            try {
+                const map = new google.maps.Map(document.getElementById('map'), {
+                    center: { lat: 28.6139, lng: 77.2090 }, // Delhi
+                    zoom: 8
+                });
+                updateStatus('Map initialized successfully!', 'success');
+            } catch (error) {
+                console.error('Map initialization failed:', error);
+                updateStatus('Map initialization failed - check console', 'error');
+            }
+        }
+        
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            console.log('Page loaded, starting Google Maps test...');
+            setTimeout(testManualLoad, 1000);
+        });
+    </script>
+</body>
+</html>

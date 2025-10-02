@@ -1,0 +1,25 @@
+# TimesFM AI Service Dependencies (ARM64 compatible)
+numpy>=1.24.0,<1.25.0
+pandas>=2.0.0,<2.1.0
+scipy>=1.11.0,<1.12.0
+scikit-learn>=1.3.0,<1.4.0
+
+# API Framework (install this first)
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Data Processing
+pydantic>=2.5.0
+python-multipart>=0.0.6
+
+# Environment Management
+python-dotenv>=1.0.0
+
+# Compatible ML Frameworks for ARM64
+torch>=2.1.0 --index-url https://download.pytorch.org/whl/cpu
+transformers>=4.35.0
+einops>=0.7.0
+
+# TimesFM (Google Research) - install last due to CPU-intensive build
+# For Apple Silicon, try alternative installation if issues persist
+git+https://github.com/google-research/timesfm.git

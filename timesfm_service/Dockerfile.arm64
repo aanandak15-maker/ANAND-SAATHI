@@ -1,0 +1,55 @@
+# TimesFM AI Service Dockerfile for Apple Silicon (ARM64)
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV TIMESFM_VERBOSITY=0
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app directory
+WORKDIR /app
+
+# Copy basic requirements first
+COPY requirements.basic.txt requirements.txt
+
+# Upgrade pip
+RUN pip install --upgrade pip setuptools wheel
+
+# Install FastAPI and basic dependencies first
+RUN pip install --no-cache-dir fastapi uvicorn python-dotenv pydantic python-multipart
+
+# Install numerical libraries
+RUN pip install --no-cache-dir numpy pandas scipy scikit-learn
+
+# Install PyTorch for CPU (Apple Silicon compatible)
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+# Install ML dependencies
+RUN pip install --no-cache-dir transformers einops
+
+# Try to install TimesFM last (may fail on some ARM64 systems, that's OK)
+# If TimesFM fails, the service will run with enhanced simulation
+RUN pip install --no-cache-dir git+https://github.com/google-research/timesfm.git && echo "✅ TimesFM installed successfully" || echo "ℹ️ TimesFM install failed, running enhanced simulation instead"
+
+# Copy application code
+COPY service.py .
+
+# Create cache directory
+RUN mkdir -p cache
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Start the service (note: TimesFM may not load on all architectures)
+CMD ["python3", "service.py"]

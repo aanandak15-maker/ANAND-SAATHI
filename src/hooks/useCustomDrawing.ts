@@ -149,21 +149,18 @@ export const useCustomDrawing = (options: UseCustomDrawingOptions) => {
   }, [options, renderShapeOnMap]);
 
   /**
-   * Start drawing mode
+   * Start drawing mode - SIMPLIFIED CLICK-BASED SYSTEM
    */
   const startDrawing = useCallback((mode: 'polygon' | 'rectangle' | 'circle') => {
-    console.log('Starting drawing mode:', mode, 'Map instance:', options.mapInstance);
+    console.log('Starting simplified drawing mode:', mode, 'Map instance:', options.mapInstance);
+
     if (!options.mapInstance?.map) {
       console.log('Map instance not available for drawing');
       return;
     }
 
-    // Check if Google Maps Drawing Library is available
-    if (!window.google?.maps?.drawing) {
-      console.error('Google Maps Drawing Library not loaded');
-      return;
-    }
-
+    // Reset drawing state
+    drawingRef.current.currentPoints = [];
     setDrawingState(prev => ({
       ...prev,
       isDrawing: true,
@@ -171,185 +168,199 @@ export const useCustomDrawing = (options: UseCustomDrawingOptions) => {
       currentShape: null
     }));
 
-    // Clear previous listeners
-    if (drawingRef.current.clickListener) {
-      drawingRef.current.clickListener.remove();
+    // Clear previous markers if any
+    if (options.mapInstance.markers) {
+      options.mapInstance.markers.forEach((marker: any) => marker.setMap(null));
     }
-    if (drawingRef.current.mouseMoveListener) {
-      drawingRef.current.mouseMoveListener.remove();
+    options.mapInstance.markers = [];
+
+    // Add click listener to map
+    const mapClickListener = options.mapInstance.map.addListener('click', (event: any) => {
+      console.log('Map clicked for drawing:', event.latLng);
+
+      const point: DrawingPoint = {
+        lat: event.latLng.lat(),
+        lng: event.latLng.lng()
+      };
+
+      // Add visual marker
+      addMarker(point);
+
+      // Handle based on mode
+      if (mode === 'polygon') {
+        handlePolygonPoint(point);
+      } else if (mode === 'rectangle') {
+        handleRectanglePoint(point);
+      } else if (mode === 'circle') {
+        handleCirclePoint(point);
+      }
+    });
+
+    drawingRef.current.clickListener = mapClickListener;
+
+    console.log(`Started simplified drawing mode: ${mode}`);
+  }, [options.mapInstance]);
+
+  /**
+   * Add visual marker to map
+   */
+  const addMarker = useCallback((point: DrawingPoint) => {
+    if (!options.mapInstance?.map) return;
+
+    const marker = new window.google.maps.Marker({
+      position: { lat: point.lat, lng: point.lng },
+      map: options.mapInstance.map,
+      title: `Point ${drawingRef.current.currentPoints.length + 1}`,
+      icon: {
+        path: window.google.maps.SymbolPath.CIRCLE,
+        scale: 8,
+        fillColor: '#2196F3',
+        fillOpacity: 1,
+        strokeColor: '#FFFFFF',
+        strokeWeight: 2
+      }
+    });
+
+    if (!options.mapInstance.markers) {
+      options.mapInstance.markers = [];
     }
+    options.mapInstance.markers.push(marker);
+  }, [options.mapInstance]);
 
-      // Initialize drawing manager if not exists
-      if (!options.mapInstance.drawingManager) {
-        try {
-          // Check if drawing library is available
-          if (!window.google?.maps?.drawing?.DrawingManager) {
-            console.error('Google Maps Drawing Library not available');
-            return;
-          }
+  /**
+   * Handle polygon point clicks
+   */
+  const handlePolygonPoint = useCallback((point: DrawingPoint) => {
+    const points = [...drawingRef.current.currentPoints];
+    points.push(point);
+    drawingRef.current.currentPoints = points;
 
-          const drawingManager = new window.google.maps.drawing.DrawingManager({
-            drawingMode: null,
-            drawingControl: false, // We'll use custom controls
-            drawingControlOptions: {
-              position: window.google.maps.ControlPosition.TOP_CENTER,
-              drawingModes: [
-                window.google.maps.drawing.OverlayType.POLYGON,
-                window.google.maps.drawing.OverlayType.RECTANGLE,
-                window.google.maps.drawing.OverlayType.CIRCLE
-              ]
-            },
-            polygonOptions: {
-              fillColor: '#2196F3',
-              strokeColor: '#2196F3',
-              fillOpacity: 0.3,
-              strokeWeight: 2,
-              clickable: true,
-              editable: true,
-              draggable: true
-            },
-            rectangleOptions: {
-              fillColor: '#FF5722',
-              strokeColor: '#FF5722',
-              fillOpacity: 0.3,
-              strokeWeight: 2,
-              clickable: true,
-              editable: true,
-              draggable: true
-            },
-            circleOptions: {
-              fillColor: '#4CAF50',
-              strokeColor: '#4CAF50',
-              fillOpacity: 0.3,
-              strokeWeight: 2,
-              clickable: true,
-              editable: true,
-              draggable: true
-            }
-          });
+    console.log(`${points.length} polygon points:`, points);
 
-          drawingManager.setMap(options.mapInstance.map);
-          options.mapInstance.drawingManager = drawingManager;
+    if (points.length >= 3) {
+      // Check if clicking near first point to close polygon
+      const firstPoint = points[0];
+      const distance = calculateDistance(point, firstPoint);
 
-        // Add event listeners
-        drawingManager.addListener('polygoncomplete', (polygon: any) => {
-          console.log('Polygon completed:', polygon);
-          const areaInSquareMeters = window.google.maps.geometry.spherical.computeArea(polygon.getPath());
-          const areaInAcres = areaInSquareMeters / 4046.8564224; // Convert to acres
-          
-          console.log('🔍 POLYGON AREA CALCULATION:', {
-            areaInSquareMeters: areaInSquareMeters,
-            areaInAcres: areaInAcres,
-            points: polygon.getPath().getArray().length
-          });
-          
-          const shape: DrawingShape = {
-            id: Date.now().toString(),
-            type: 'polygon',
-            points: polygon.getPath().getArray().map((point: any) => ({
-              lat: point.lat(),
-              lng: point.lng()
-            })),
-            area: areaInAcres, // Use converted acres
-            color: '#2196F3',
-            strokeColor: '#2196F3',
-            strokeWidth: 2,
-            fillOpacity: 0.3
-          };
-          addShape(shape);
-        });
+      if (points.length > 3 && distance < 0.0001) {
+        // Close polygon
+        console.log('Closing polygon with', points.length - 1, 'points');
+        renderPolygon(points.slice(0, -1)); // Don't include the closing click
+        const polygonPoints = points.slice(0, -1); // Remove the closing point
+        const area = calculatePolygonArea(polygonPoints);
 
-        drawingManager.addListener('rectanglecomplete', (rectangle: any) => {
-          console.log('Rectangle completed:', rectangle);
-          const bounds = rectangle.getBounds();
-          const areaInSquareMeters = window.google.maps.geometry.spherical.computeArea([
-            bounds.getNorthEast(),
-            bounds.getSouthWest()
-          ]);
-          const areaInAcres = areaInSquareMeters / 4046.8564224; // Convert to acres
-          
-          console.log('🔍 RECTANGLE AREA CALCULATION:', {
-            areaInSquareMeters: areaInSquareMeters,
-            areaInAcres: areaInAcres,
-            bounds: {
-              north: bounds.getNorthEast().lat(),
-              south: bounds.getSouthWest().lat(),
-              east: bounds.getNorthEast().lng(),
-              west: bounds.getSouthWest().lng()
-            }
-          });
-          
-          const shape: DrawingShape = {
-            id: Date.now().toString(),
-            type: 'rectangle',
-            points: [
-              { lat: bounds.getSouthWest().lat(), lng: bounds.getSouthWest().lng() },
-              { lat: bounds.getNorthEast().lat(), lng: bounds.getNorthEast().lng() }
-            ],
-            area: areaInAcres, // Use converted acres
-            color: '#FF5722',
-            strokeColor: '#FF5722',
-            strokeWidth: 2,
-            fillOpacity: 0.3
-          };
-          addShape(shape);
-        });
+        const shape: DrawingShape = {
+          id: `polygon_${Date.now()}`,
+          type: 'polygon',
+          points: polygonPoints,
+          area: area,
+          color: '#4CAF50',
+          strokeColor: '#2E7D32',
+          strokeWidth: 2,
+          fillOpacity: 0.3
+        };
 
-        drawingManager.addListener('circlecomplete', (circle: any) => {
-          console.log('Circle completed:', circle);
-          const center = circle.getCenter();
-          const radius = circle.getRadius();
-          const areaInSquareMeters = Math.PI * radius * radius;
-          const areaInAcres = areaInSquareMeters / 4046.8564224; // Convert to acres
-          
-          console.log('🔍 CIRCLE AREA CALCULATION:', {
-            radius: radius,
-            areaInSquareMeters: areaInSquareMeters,
-            areaInAcres: areaInAcres,
-            center: { lat: center.lat(), lng: center.lng() }
-          });
-          
-          const shape: DrawingShape = {
-            id: Date.now().toString(),
-            type: 'circle',
-            points: [{ lat: center.lat(), lng: center.lng() }],
-            center: { lat: center.lat(), lng: center.lng() },
-            radius: radius,
-            area: areaInAcres, // Use converted acres
-            color: '#4CAF50',
-            strokeColor: '#4CAF50',
-            strokeWidth: 2,
-            fillOpacity: 0.3
-          };
-          addShape(shape);
-        });
-
-        console.log('Drawing manager initialized successfully');
-      } catch (error) {
-        console.error('Error initializing drawing manager:', error);
+        addShape(shape);
         return;
       }
     }
 
-    // Set drawing mode
-    if (options.mapInstance.drawingManager) {
-      let drawingMode = null;
-      switch (mode) {
-        case 'polygon':
-          drawingMode = window.google.maps.drawing.OverlayType.POLYGON;
-          break;
-        case 'rectangle':
-          drawingMode = window.google.maps.drawing.OverlayType.RECTANGLE;
-          break;
-        case 'circle':
-          drawingMode = window.google.maps.drawing.OverlayType.CIRCLE;
-          break;
-      }
-      options.mapInstance.drawingManager.setDrawingMode(drawingMode);
+    // Update temporary polygon preview
+    if (points.length >= 2) {
+      renderPolygon(points);
+    }
+  }, []);
+
+  /**
+   * Handle rectangle point clicks
+   */
+  const handleRectanglePoint = useCallback((point: DrawingPoint) => {
+    const points = [...drawingRef.current.currentPoints];
+    points.push(point);
+    drawingRef.current.currentPoints = points;
+
+    if (points.length >= 2) {
+      const [p1, p2] = points;
+      const rectanglePoints = [
+        p1,
+        { lat: p1.lat, lng: p2.lng },
+        p2,
+        { lat: p2.lat, lng: p1.lng }
+      ];
+
+      const area = calculatePolygonArea(rectanglePoints);
+
+      const shape: DrawingShape = {
+        id: `rectangle_${Date.now()}`,
+        type: 'rectangle',
+        points: rectanglePoints,
+        area: area,
+        color: '#FF9800',
+        strokeColor: '#F57C00',
+        strokeWidth: 2,
+        fillOpacity: 0.3
+      };
+
+      addShape(shape);
+    }
+  }, []);
+
+  /**
+   * Handle circle point clicks (center + edge for radius)
+   */
+  const handleCirclePoint = useCallback((point: DrawingPoint) => {
+    const points = [...drawingRef.current.currentPoints];
+    points.push(point);
+    drawingRef.current.currentPoints = points;
+
+    if (points.length >= 2) {
+      const [center, edge] = points;
+      const radius = calculateDistance(center, edge);
+      const area = Math.PI * radius * radius / 4046.8564224; // Convert to acres
+
+      const shape: DrawingShape = {
+        id: `circle_${Date.now()}`,
+        type: 'circle',
+        points: [center],
+        center: center,
+        radius: radius,
+        area: area,
+        color: '#9C27B0',
+        strokeColor: '#7B1FA2',
+        strokeWidth: 2,
+        fillOpacity: 0.3
+      };
+
+      addShape(shape);
+    }
+  }, []);
+
+  /**
+   * Render polygon on map
+   */
+  const renderPolygon = useCallback((points: DrawingPoint[]) => {
+    if (!options.mapInstance?.map) return;
+
+    // Clear previous polygon
+    if (options.mapInstance.tempPolygon) {
+      options.mapInstance.tempPolygon.setMap(null);
     }
 
-    console.log(`Started drawing mode: ${mode}`);
-  }, [options.mapInstance, addShape]);
+    if (points.length >= 2) {
+      const polygon = new window.google.maps.Polygon({
+        paths: points.map(p => ({ lat: p.lat, lng: p.lng })),
+        strokeColor: '#FF0000',
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: '#FF0000',
+        fillOpacity: 0.3,
+        clickable: false
+      });
+
+      polygon.setMap(options.mapInstance.map);
+      options.mapInstance.tempPolygon = polygon;
+    }
+  }, [options.mapInstance]);
 
   /**
    * Stop drawing mode

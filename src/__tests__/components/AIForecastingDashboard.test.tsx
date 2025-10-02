@@ -2,6 +2,7 @@
  * Integration Tests for AI Forecasting Dashboard
  */
 
+import '@testing-library/jest-dom';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { AIForecastingDashboard } from '@/components/AIForecastingDashboard';
@@ -42,9 +43,17 @@ describe('AIForecastingDashboard', () => {
       </TestWrapper>
     );
 
-    expect(screen.getByText(/Yield Forecast/i)).toBeInTheDocument();
-    expect(screen.getByText(/Market Forecast/i)).toBeInTheDocument();
-    expect(screen.getByText(/Weather Forecast/i)).toBeInTheDocument();
+    // Check that at least one "Yield Forecast" text element exists
+    const yieldForecastElements = screen.getAllByText(/Yield Forecast/i);
+    expect(yieldForecastElements.length).toBeGreaterThan(0);
+
+    // Check that at least one "Market Forecast" text element exists
+    const marketForecastElements = screen.getAllByText(/Market Forecast/i);
+    expect(marketForecastElements.length).toBeGreaterThan(0);
+
+    // Check that at least one "Weather Forecast" text element exists
+    const weatherForecastElements = screen.getAllByText(/Weather Forecast/i);
+    expect(weatherForecastElements.length).toBeGreaterThan(0);
   });
 
   it('should have tabs for different forecast types', () => {

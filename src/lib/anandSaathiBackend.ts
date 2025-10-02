@@ -3,24 +3,22 @@
  * TypeScript interfaces and API client for backend integration
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 import {
   FieldSchema,
   FarmSchema,
   SignupSchema,
   SigninSchema,
-  FieldAnalysisSchema,
   type FieldInput,
   type FarmInput,
   type SignupInput,
-  type SigninInput,
-  type FieldAnalysisInput
+  type SigninInput
 } from './validation';
 
 // Base API configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 // Mock data flag for development - DISABLED FOR PRODUCTION
-const USE_MOCK_DATA = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true';
+const USE_MOCK_DATA = (import.meta.env as any).DEV && (import.meta.env as any).VITE_USE_MOCK === 'true';
 
 // Mock data for development
 const MOCK_FIELD_DATA: FieldData[] = [
@@ -251,15 +249,10 @@ export interface MarketForecast {
 
 class AnandSaathiBackendAPI {
   private baseUrl: string;
-  private supabase: any;
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
-    // Initialize Supabase client for authentication
-    this.supabase = createClient(
-      import.meta.env.VITE_SUPABASE_URL,
-      import.meta.env.VITE_SUPABASE_ANON_KEY
-    );
+    // Use the shared Supabase client instead of creating a new one
   }
 
   private async getMockResponse<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
@@ -324,7 +317,7 @@ class AnandSaathiBackendAPI {
 
     try {
       // Get authentication token from Supabase
-      const { data: { session } } = await this.supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
 
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
@@ -547,7 +540,7 @@ class AnandSaathiBackendAPI {
     }
 
     try {
-      const { data, error } = await this.supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -581,7 +574,7 @@ class AnandSaathiBackendAPI {
     }
 
     try {
-      const { data, error } = await this.supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
@@ -603,7 +596,7 @@ class AnandSaathiBackendAPI {
 
   async signOut() {
     try {
-      const { error } = await this.supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
       if (error) throw error;
 
       return {

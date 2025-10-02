@@ -1,0 +1,30 @@
+{
+  "name": "अनंद साथी - Anand Saathi",
+  "short_name": "अनंद साथी",
+  "description": "Smart Agriculture Platform for Punjab Farmers",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#22c55e",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["productivity", "utilities", "business"],
+  "lang": "hi",
+  "dir": "ltr"
+}

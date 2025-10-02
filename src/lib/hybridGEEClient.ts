@@ -1,7 +1,7 @@
 // Hybrid Google Earth Engine Integration
 // Uses Google Maps API key for satellite imagery + Enhanced simulation for vegetation analysis
 
-const GOOGLE_MAPS_API_KEY = 'AIzaSyBZlJtstGEj9wCMP5_O5PaGytIi-iForN0';
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBZlJtstGEj9wCMP5_O5PaGytIi-iForN0';
 
 export interface FieldBoundary {
   coordinates: number[][][];

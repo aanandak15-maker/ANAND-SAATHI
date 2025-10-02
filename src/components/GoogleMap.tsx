@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { MapPin, Settings, Layers, Satellite } from 'lucide-react';
+import { MapPin, Settings, Satellite, AlertTriangle } from 'lucide-react';
+import { loadGoogleMaps } from '@/lib/googleMapsLoader';
 
 declare global {
   interface Window {
@@ -30,33 +30,23 @@ const GoogleMap = () => {
     { lat: 25.9840, lng: 85.6720 },
     { lat: 25.9840, lng: 85.6699 }
   ];
-
   const fieldCenter = { lat: 25.9848, lng: 85.6709 };
 
   useEffect(() => {
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-    if (!apiKey) {
-      console.error('Google Maps API key not found');
-      return;
-    }
-
-    // Load Google Maps script
-    if (!window.google) {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry,visualization`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
+    const initializeGoogleMaps = async () => {
+      try {
+        console.log('Loading Google Maps...');
+        await loadGoogleMaps();
+        console.log('Google Maps loaded successfully');
         setIsLoaded(true);
         initializeMap();
-      };
-      document.head.appendChild(script);
-    } else {
-      setIsLoaded(true);
-      initializeMap();
-    }
-  }, []);
+      } catch (error) {
+        console.error('Failed to load Google Maps:', error);
+      }
+    };
 
+    initializeGoogleMaps();
+  }, []);
   const initializeMap = () => {
     if (!mapRef.current || !window.google) return;
 
@@ -181,8 +171,8 @@ const GoogleMap = () => {
       hybrid: window.google.maps.MapTypeId.HYBRID,
       terrain: window.google.maps.MapTypeId.TERRAIN
     };
-    
-    mapInstanceRef.current.setMapTypeId(mapTypeMap[type] || mapTypeMap.satellite);
+
+    mapInstanceRef.current.setMapTypeId(mapTypeMap[type as keyof typeof mapTypeMap] || mapTypeMap.satellite);
   };
 
   useEffect(() => {
@@ -208,7 +198,41 @@ const GoogleMap = () => {
           <div className="bg-muted rounded-lg h-[500px] flex items-center justify-center">
             <div className="text-center">
               <Satellite className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-              <p className="text-muted-foreground">Initializing map...</p>
+              <p className="text-muted-foreground mb-2">Initializing map...</p>
+              <p className="text-sm text-muted-foreground">If the map doesn't load, check:</p>
+              <ul className="text-sm text-muted-foreground text-left mt-2">
+                <li>• Google Maps API key is valid</li>
+                <li>• API key has correct domain permissions</li>
+                <li>• No network connectivity issues</li>
+              </ul>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!window.google || !window.google.maps) {
+    return (
+      <div className="space-y-4">
+        <Card className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertTriangle className="h-5 w-5 text-yellow-500" />
+            <h3 className="text-lg font-semibold text-yellow-700">Google Maps API Not Loaded</h3>
+          </div>
+          <div className="bg-yellow-50 rounded-lg h-[500px] flex items-center justify-center">
+            <div className="text-center max-w-md">
+              <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+              <p className="text-yellow-700 mb-4">Google Maps failed to load. This could be due to:</p>
+              <ul className="text-sm text-yellow-600 text-left mb-4 space-y-1">
+                <li>• Invalid API key</li>
+                <li>• API key domain restrictions</li>
+                <li>• Network connectivity issues</li>
+                <li>• API key quota exceeded</li>
+              </ul>
+              <p className="text-sm text-yellow-600">
+                Check the browser console for detailed error messages and verify your Google Maps API key configuration.
+              </p>
             </div>
           </div>
         </Card>

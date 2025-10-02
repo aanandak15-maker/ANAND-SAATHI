@@ -13,6 +13,7 @@ import { anandSaathiBackend, FieldData } from '@/lib/anandSaathiBackend';
 import { toast } from 'sonner';
 import { useAuth } from './AuthProvider';
 import AnandSaathiEnhancedFieldMapper from './AnandSaathiEnhancedFieldMapper';
+import RealTimeDashboard from './RealTimeDashboard';
 
 interface DashboardStats {
   totalFields: number;
@@ -277,6 +278,13 @@ export const AnandSaathiDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Real-time AI Predictions */}
+        {fields.length > 0 && (
+          <div className="mb-6">
+            <RealTimeDashboard fieldId={fields[0].id.toString()} />
+          </div>
+        )}
 
         {/* Market Prices - Simple & Useful */}
         <Card className="mb-6">

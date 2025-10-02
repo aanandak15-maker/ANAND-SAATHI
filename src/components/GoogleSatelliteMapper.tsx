@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getRealFieldAnalysis, storeFieldData, RealFieldData } from "@/lib/realFieldData";
+import { loadGoogleMaps } from '@/lib/googleMapsLoader';
 
 interface FieldPoint {
   lat: number;
@@ -57,29 +58,24 @@ const GoogleSatelliteMapper = ({ onComplete }: GoogleSatelliteMapperProps) => {
   const markersRef = useRef<any[]>([]);
   const polygonRef = useRef<any>(null);
 
-  // Load Google Maps API
+  // Load Google Maps API using centralized loader
   useEffect(() => {
     if (!window.google && !isLoadingMap) {
       setIsLoadingMap(true);
-      
-      // Create script element with version parameter to get latest imagery
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBZlJtstGEj9wCMP5_O5PaGytIi-iForN0&libraries=geometry&v=weekly`;
-      script.async = true;
-      script.defer = true;
-      
-      script.onload = () => {
-        setMapLoaded(true);
-        setIsLoadingMap(false);
-        toast.success("Google Maps loaded successfully!");
+
+      const initializeGoogleMaps = async () => {
+        try {
+          await loadGoogleMaps();
+          setMapLoaded(true);
+          setIsLoadingMap(false);
+          toast.success("Google Maps loaded successfully!");
+        } catch (error) {
+          setIsLoadingMap(false);
+          toast.error("Failed to load Google Maps. Using fallback interface.");
+        }
       };
-      
-      script.onerror = () => {
-        setIsLoadingMap(false);
-        toast.error("Failed to load Google Maps. Using fallback interface.");
-      };
-      
-      document.head.appendChild(script);
+
+      initializeGoogleMaps();
     } else if (window.google) {
       setMapLoaded(true);
     }
