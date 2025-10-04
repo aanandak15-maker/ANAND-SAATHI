@@ -1,0 +1,32 @@
+# Production Environment Variables for Anand Saathi
+# Copy this to .env.production and fill in your actual values
+
+# Application
+NODE_ENV=production
+PORT=3000
+HEALTH_PORT=3001
+
+# API Keys - REPLACE WITH YOUR ACTUAL KEYS
+VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+VITE_WEATHER_API_KEY=your_weather_api_key_here
+VITE_OPENWEATHER_API_KEY=your_openweather_api_key_here
+
+# Database (if using)
+DATABASE_URL=your_database_url_here
+POSTGRES_PASSWORD=your_secure_password_here
+
+# Redis (if using)
+REDIS_URL=redis://redis:6379
+
+# TimesFM API
+VITE_TIMESFM_API_URL=http://timesfm-api:8001
+
+# Security
+JWT_SECRET=your_jwt_secret_here
+SESSION_SECRET=your_session_secret_here
+
+# Monitoring
+SENTRY_DSN=your_sentry_dsn_here
+
+# CORS Origins (comma-separated)
+CORS_ORIGINS=https://anandsaathi.com,https://www.anandsaathi.com

@@ -34,13 +34,6 @@ services:
       - VITE_TIMESFM_API_URL=http://timesfm-api:8001  # Fixed port
       - VITE_OPENWEATHER_API_KEY=623822e31715b644264f0f606c4a9952
       - VITE_GOOGLE_MAPS_API_KEY=AIzaSyBZlJtstGEj9wCMP5_O5PaGytIi-iForN0
-      # Supabase configuration (using demo values for now)
-      - VITE_SUPABASE_URL=https://your-project.supabase.co
-      - VITE_SUPABASE_ANON_KEY=your-anon-key
-      - SUPABASE_URL=https://your-project.supabase.co
-      - SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-      # Disable Sentry for now
-      - SENTRY_DSN=
     depends_on:
       timesfm-api:
         condition: service_healthy  # Wait for health check

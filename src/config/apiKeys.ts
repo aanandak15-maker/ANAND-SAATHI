@@ -9,7 +9,10 @@ export const API_KEYS = {
   GOOGLE_MAPS: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBZlJtstGEj9wCMP5_O5PaGytIi-iForN0',
   
   // Weather API Key (if needed)
-  WEATHER: import.meta.env.VITE_WEATHER_API_KEY || 'YOUR_WEATHER_API_KEY',
+  WEATHER: import.meta.env.VITE_WEATHER_API_KEY || '623822e31715b644264f0f606c4a9952',
+  
+  // OpenWeatherMap API Key
+  OPENWEATHER: import.meta.env.VITE_OPENWEATHER_API_KEY || '623822e31715b644264f0f606c4a9952',
   
   // WhatsApp Business API Key (if needed)
   WHATSAPP: import.meta.env.VITE_WHATSAPP_API_KEY || 'YOUR_WHATSAPP_API_KEY',

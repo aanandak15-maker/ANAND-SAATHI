@@ -44,14 +44,18 @@ export const AIForecastingDashboard: React.FC = () => {
       const historicalYield = Array(30).fill(0).map(() => 12 + Math.random() * 4);
       const historicalPrices = Array(30).fill(0).map(() => 2000 + Math.random() * 400);
 
-      // Get comprehensive forecast
+      // Get comprehensive forecast with location for 14-day weather
       const result = await timesFMService.getComprehensiveForecast(
         selectedField.id.toString(),
         selectedField.crop_type,
         {
           yield: historicalYield,
           prices: historicalPrices,
-        }
+        },
+        selectedField.latitude && selectedField.longitude ? {
+          lat: selectedField.latitude,
+          lng: selectedField.longitude
+        } : undefined
       );
 
       if (!result.success || !result.data) {
@@ -86,7 +90,7 @@ export const AIForecastingDashboard: React.FC = () => {
         },
       });
 
-      // Add weather forecast to state
+      // Add weather forecast to state (14-day forecast)
       dispatch({
         type: 'ADD_FORECAST',
         payload: {
@@ -132,7 +136,7 @@ export const AIForecastingDashboard: React.FC = () => {
   })) : [];
 
   const weatherChartData = weatherForecast ? weatherForecast.predictions.map((value, index) => ({
-    day: index + 1,
+    day: `Day ${index + 1}`,
     temperature: value,
   })) : [];
 
